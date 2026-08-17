@@ -19,10 +19,9 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useNavigate } from "@tanstack/react-router";
-import { AnimatePresence, motion } from "framer-motion";
 import { produce } from "immer";
 import { Archive, ChevronRight, Flag, Plus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { priorityColorsTaskCard } from "@/constants/priority-colors";
 import { useUpdateTask } from "@/hooks/mutations/task/use-update-task";
@@ -39,11 +38,170 @@ import { toast } from "@/lib/toast";
 import useBulkSelectionStore from "@/store/bulk-selection";
 import useProjectStore from "@/store/project";
 import type { ProjectWithTasks } from "@/types/project";
+import type Task from "@/types/task";
 import BulkToolbar from "../bulk-selection/bulk-toolbar";
 import { ArchiveTasksModal } from "../shared/modals/archive-tasks-modal";
 import CreateTaskModal from "../shared/modals/create-task-modal";
 import { LIST_ROW_COLUMNS } from "./columns";
 import TaskRow from "./task-row";
+
+type Column = ProjectWithTasks["columns"][number];
+
+type ColumnSectionProps = {
+  column: Column;
+  projectSlug: string;
+  sectionExpanded: boolean;
+  expandedEpics: Record<string, boolean>;
+  tasksById: Map<string, Task>;
+  groupByTag: boolean;
+  showDropIndicator: boolean;
+  activeLabelIds?: string[];
+  onToggleLabel?: (labelId: string) => void;
+  onToggleSection: (columnId: string) => void;
+  onToggleEpic: (taskId: string) => void;
+  onAddTask: (columnId: string) => void;
+  onArchive: (column: Column) => void;
+};
+
+function ColumnSection({
+  column,
+  projectSlug,
+  sectionExpanded,
+  expandedEpics,
+  tasksById,
+  groupByTag,
+  showDropIndicator,
+  activeLabelIds,
+  onToggleLabel,
+  onToggleSection,
+  onToggleEpic,
+  onAddTask,
+  onArchive,
+}: ColumnSectionProps) {
+  const { t } = useTranslation();
+  const { setNodeRef } = useDroppable({
+    id: column.id,
+    data: {
+      type: "column",
+      column,
+    },
+  });
+
+  const groups = groupByTag
+    ? groupTasksBySurfaceTag(column.tasks)
+    : [{ tag: "", tasks: column.tasks }];
+
+  return (
+    <div
+      className={cn(
+        "border-b border-border/50 transition-colors duration-150 overflow-auto",
+        showDropIndicator && "border-l-4 border-l-ring bg-accent/35",
+      )}
+      style={
+        column.color && !showDropIndicator
+          ? { boxShadow: `inset 3px 0 0 0 ${column.color}` }
+          : undefined
+      }
+    >
+      <div className="flex items-center justify-between py-2 px-4 bg-muted/60 border-b border-border/50">
+        <button
+          type="button"
+          onClick={() => onToggleSection(column.id)}
+          className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronRight
+            className={cn(
+              "w-3 h-3 transition-transform",
+              sectionExpanded && "rotate-90",
+            )}
+          />
+          <div className="flex items-center gap-2 h-4">
+            {getColumnIcon(
+              column.id,
+              column.isFinal,
+              column.icon,
+              column.color,
+            )}
+            <div className="flex items-center gap-1">
+              <span className="mt-1 mr-1">{column.name}</span>
+              <span className="text-xs text-muted-foreground mt-0.5">
+                {column.tasks.length}
+              </span>
+            </div>
+          </div>
+        </button>
+
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onAddTask(column.id)}
+            className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground transition-colors"
+            title={t("tasks:listView.addTask")}
+          >
+            <Plus className="w-3 h-3" />
+          </button>
+
+          {column.isFinal && column.tasks.length > 0 && (
+            <button
+              type="button"
+              onClick={() => onArchive(column)}
+              className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground transition-colors"
+              title={t("tasks:listView.archiveAllTooltip")}
+            >
+              <Archive className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {sectionExpanded && (
+        <div ref={setNodeRef} className="bg-card">
+          <SortableContext
+            items={column.tasks}
+            strategy={verticalListSortingStrategy}
+          >
+            {groups.flatMap((group) => {
+              const rows = groupColumnTasksByEpic(
+                group.tasks,
+                tasksById,
+                expandedEpics,
+              );
+              return [
+                groupByTag && group.tag ? (
+                  <div
+                    key={`${column.id}-${group.tag}`}
+                    className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground bg-muted/40"
+                  >
+                    {group.tag}
+                  </div>
+                ) : null,
+                ...rows.map(({ task: node, depth, isEpicHeader }) => (
+                  <TaskRow
+                    key={`${isEpicHeader ? "epic-header-" : ""}${node.id}`}
+                    task={node}
+                    projectSlug={projectSlug}
+                    depth={depth}
+                    isEpicHeader={isEpicHeader}
+                    expanded={expandedEpics[node.id] !== false}
+                    activeLabelIds={activeLabelIds}
+                    onToggleLabel={onToggleLabel}
+                    onToggleExpand={() => onToggleEpic(node.id)}
+                  />
+                )),
+              ];
+            })}
+          </SortableContext>
+
+          {column.tasks.length === 0 && (
+            <div className="py-6 px-4 text-center text-xs text-muted-foreground">
+              {t("tasks:listView.noTasks")}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 type ListViewProps = {
   project: ProjectWithTasks;
@@ -266,18 +424,30 @@ function ListView({
     setProject(updatedProject);
   };
 
-  const toggleSection = (sectionId: string) => {
+  const toggleSection = useCallback((sectionId: string) => {
     setExpandedSections((prev) => ({
       ...prev,
       [sectionId]: !prev[sectionId],
     }));
-  };
+  }, []);
 
-  const handleArchiveClick = (column: ProjectWithTasks["columns"][number]) => {
+  const toggleEpic = useCallback((taskId: string) => {
+    setExpandedEpics((current) => ({
+      ...current,
+      [taskId]: current[taskId] === false,
+    }));
+  }, []);
+
+  const handleAddTask = useCallback((columnId: string) => {
+    setIsTaskModalOpen(true);
+    setActiveColumn(columnId);
+  }, []);
+
+  const handleArchiveClick = useCallback((column: Column) => {
     if (!column.isFinal || column.tasks.length === 0) return;
     setColumnToArchive(column);
     setIsArchiveModalOpen(true);
-  };
+  }, []);
 
   const handleConfirmArchive = () => {
     if (!columnToArchive) return;
@@ -306,164 +476,6 @@ function ListView({
     setIsArchiveModalOpen(false);
     setColumnToArchive(null);
   };
-
-  function ColumnSection({
-    column,
-  }: {
-    column: ProjectWithTasks["columns"][number];
-  }) {
-    const { setNodeRef } = useDroppable({
-      id: column.id,
-      data: {
-        type: "column",
-        column,
-      },
-    });
-
-    const showDropIndicator = activeId && overColumnId === column.id;
-
-    return (
-      <div
-        className={cn(
-          "border-b border-border/50 transition-colors duration-150 overflow-auto",
-          showDropIndicator && "border-l-4 border-l-ring bg-accent/35",
-        )}
-        style={
-          column.color && !showDropIndicator
-            ? { boxShadow: `inset 3px 0 0 0 ${column.color}` }
-            : undefined
-        }
-      >
-        <div className="flex items-center justify-between py-2 px-4 bg-muted/60 border-b border-border/50">
-          <button
-            type="button"
-            onClick={() => toggleSection(column.id)}
-            className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-foreground transition-colors"
-          >
-            <ChevronRight
-              className={cn(
-                "w-3 h-3 transition-transform",
-                expandedSections[column.id] && "rotate-90",
-              )}
-            />
-            <div className="flex items-center gap-2 h-4">
-              {getColumnIcon(
-                column.id,
-                column.isFinal,
-                column.icon,
-                column.color,
-              )}
-              <div className="flex items-center gap-1">
-                <span className="mt-1 mr-1">{column.name}</span>
-                <span className="text-xs text-muted-foreground mt-0.5">
-                  {column.tasks.length}
-                </span>
-              </div>
-            </div>
-          </button>
-
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => {
-                setIsTaskModalOpen(true);
-                setActiveColumn(column.id);
-              }}
-              className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground transition-colors"
-              title={t("tasks:listView.addTask")}
-            >
-              <Plus className="w-3 h-3" />
-            </button>
-
-            {column.isFinal && column.tasks.length > 0 && (
-              <button
-                type="button"
-                onClick={() => handleArchiveClick(column)}
-                className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground transition-colors"
-                title={t("tasks:listView.archiveAllTooltip")}
-              >
-                <Archive className="w-3 h-3" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {expandedSections[column.id] && (
-          <div
-            ref={setNodeRef}
-            className="bg-card transition-[translate,opacity] duration-150 ease-out starting:-translate-y-1 starting:opacity-0 motion-reduce:starting:translate-y-0"
-          >
-            <SortableContext
-              items={column.tasks}
-              strategy={verticalListSortingStrategy}
-            >
-              <AnimatePresence initial={false} mode="popLayout">
-                {(groupByTag
-                  ? groupTasksBySurfaceTag(column.tasks)
-                  : [
-                      {
-                        tag: "",
-                        tasks: column.tasks,
-                      },
-                    ]
-                ).flatMap((group) => {
-                  const rows = groupColumnTasksByEpic(
-                    group.tasks,
-                    tasksById,
-                    expandedEpics,
-                  );
-                  return [
-                    groupByTag && group.tag ? (
-                      <div
-                        key={`${column.id}-${group.tag}`}
-                        className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground bg-muted/40"
-                      >
-                        {group.tag}
-                      </div>
-                    ) : null,
-                    ...rows.map(({ task: node, depth, isEpicHeader }) => (
-                      <motion.div
-                        key={`${isEpicHeader ? "epic-header-" : ""}${node.id}`}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{
-                          duration: 0.15,
-                          ease: [0.23, 1, 0.32, 1],
-                        }}
-                      >
-                        <TaskRow
-                          task={node}
-                          projectSlug={project?.slug ?? ""}
-                          depth={depth}
-                          isEpicHeader={isEpicHeader}
-                          expanded={expandedEpics[node.id] !== false}
-                          activeLabelIds={activeLabelIds}
-                          onToggleLabel={onToggleLabel}
-                          onToggleExpand={() =>
-                            setExpandedEpics((current) => ({
-                              ...current,
-                              [node.id]: current[node.id] === false,
-                            }))
-                          }
-                        />
-                      </motion.div>
-                    )),
-                  ];
-                })}
-              </AnimatePresence>
-            </SortableContext>
-
-            {column.tasks.length === 0 && (
-              <div className="py-6 px-4 text-center text-xs text-muted-foreground">
-                {t("tasks:listView.noTasks")}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
 
   if (!project?.columns) {
     return null;
@@ -525,7 +537,24 @@ function ListView({
         </div>
         <div className="divide-y divide-border/50">
           {project.columns.map((column) => (
-            <ColumnSection key={column.id} column={column} />
+            <ColumnSection
+              key={column.id}
+              column={column}
+              projectSlug={project.slug ?? ""}
+              sectionExpanded={expandedSections[column.id]}
+              expandedEpics={expandedEpics}
+              tasksById={tasksById}
+              groupByTag={groupByTag}
+              showDropIndicator={Boolean(
+                activeId && overColumnId === column.id,
+              )}
+              activeLabelIds={activeLabelIds}
+              onToggleLabel={onToggleLabel}
+              onToggleSection={toggleSection}
+              onToggleEpic={toggleEpic}
+              onAddTask={handleAddTask}
+              onArchive={handleArchiveClick}
+            />
           ))}
         </div>
       </div>
