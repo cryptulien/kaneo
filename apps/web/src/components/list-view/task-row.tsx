@@ -38,6 +38,7 @@ import {
   getDueDateStatus,
   isTaskCompleted,
 } from "@/lib/due-date-status";
+import { isEpicTask } from "@/lib/epic-tree";
 import { getInitials } from "@/lib/get-initials";
 import { getPriorityIcon } from "@/lib/priority";
 import { toast } from "@/lib/toast";
@@ -46,16 +47,18 @@ import useBulkSelectionStore from "@/store/bulk-selection";
 import useProjectStore from "@/store/project";
 import { useUserPreferencesStore } from "@/store/user-preferences";
 import type Task from "@/types/task";
-import TaskStatusChip from "../task/task-status-chip";
 import TaskCardContextMenuContent from "../kanban-board/task-card-context-menu/task-card-context-menu-content";
 import { TaskLabels } from "../kanban-board/task-labels";
+import TaskStatusChip from "../task/task-status-chip";
 import { ContextMenu, ContextMenuTrigger } from "../ui/context-menu";
+import { LIST_ROW_COLUMNS } from "./columns";
 
 type TaskRowProps = {
   task: Task;
   projectSlug: string;
   depth?: number;
   expanded?: boolean;
+  isEpicHeader?: boolean;
   onToggleExpand?: () => void;
 };
 
@@ -64,6 +67,7 @@ function TaskRow({
   projectSlug,
   depth = 0,
   expanded = false,
+  isEpicHeader = false,
   onToggleExpand,
 }: TaskRowProps) {
   const { t } = useTranslation();
@@ -75,7 +79,11 @@ function TaskRow({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id });
+  } = useSortable({
+    id: isEpicHeader ? `epic-header-${task.id}` : task.id,
+    disabled: isEpicHeader,
+  });
+  const isEpic = isEpicHeader || isEpicTask(task);
 
   const { project } = useProjectStore();
   const taskIsCompleted = isTaskCompleted(task.status, project?.columns);
@@ -155,6 +163,18 @@ function TaskRow({
     const currentParams = new URLSearchParams(window.location.search);
     const currentTaskId = currentParams.get("taskId");
 
+    if (isEpic && workspace && project) {
+      navigate({
+        to: "/dashboard/workspace/$workspaceId/project/$projectId/task/$taskId",
+        params: {
+          workspaceId: workspace.id,
+          projectId: project.id,
+          taskId: task.id,
+        },
+      });
+      return;
+    }
+
     if (currentTaskId === task.id) {
       navigate({
         to: ".",
@@ -166,6 +186,20 @@ function TaskRow({
         search: { taskId: task.id },
       });
     }
+  };
+
+  const openEpicPage = (event: React.MouseEvent, epicId: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!workspace || !project) return;
+    navigate({
+      to: "/dashboard/workspace/$workspaceId/project/$projectId/task/$taskId",
+      params: {
+        workspaceId: workspace.id,
+        projectId: project.id,
+        taskId: epicId,
+      },
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -208,183 +242,208 @@ function TaskRow({
             onClick={handleClick}
             onKeyDown={handleKeyDown}
             className={cn(
-              "group relative flex items-center gap-3 px-4 py-1.5 transition-colors cursor-pointer",
+              "group relative px-4 py-1.5 transition-colors cursor-pointer",
+              LIST_ROW_COLUMNS,
               isTaskSelected ? "bg-accent/45" : "hover:bg-accent/60",
+              isEpicHeader && "bg-muted/35",
             )}
-            style={{ paddingLeft: 16 + depth * 20 }}
             {...attributes}
             {...listeners}
           >
-            {(task.childCount ?? 0) > 0 ? (
-              <button
-                type="button"
-                className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onToggleExpand?.();
-                }}
-                onPointerDown={(event) => event.stopPropagation()}
-                aria-expanded={expanded}
-                title={
-                  expanded
-                    ? t("tasks:epics.collapse", { defaultValue: "Collapse" })
-                    : t("tasks:epics.expand", { defaultValue: "Expand" })
-                }
-              >
-                {expanded ? (
-                  <ChevronDown className="h-3.5 w-3.5" />
-                ) : (
-                  <ChevronRight className="h-3.5 w-3.5" />
-                )}
-              </button>
-            ) : (
-              <span className="w-5 shrink-0" />
-            )}
-            {showPriority && (
-              <div className="flex-shrink-0 first:[&_svg]:h-4 first:[&_svg]:w-4">
-                {getPriorityIcon(task.priority ?? "")}
-              </div>
-            )}
-            {showTaskNumbers && (
-              <div className="text-xs font-mono text-muted-foreground flex-shrink-0">
-                {projectSlug}-{task.number}
-              </div>
-            )}
-
-            <div className="flex-1 min-w-0 flex items-center gap-2">
-              <div className="flex items-center gap-2 justify-between w-full">
-                <span className="text-sm text-foreground truncate">
-                  {task.title}
-                  {(task.childCount ?? 0) > 0 && (
-                    <span className="ml-2 text-[10px] font-medium text-muted-foreground">
-                      {task.childCount}
-                    </span>
+            <div
+              className="flex min-w-0 items-center gap-2"
+              style={{ paddingLeft: depth * 20 }}
+            >
+              {isEpic ? (
+                <button
+                  type="button"
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onToggleExpand?.();
+                  }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  aria-expanded={expanded}
+                  title={
+                    expanded
+                      ? t("tasks:epics.collapse", { defaultValue: "Collapse" })
+                      : t("tasks:epics.expand", { defaultValue: "Expand" })
+                  }
+                >
+                  {expanded ? (
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  ) : (
+                    <ChevronRight className="h-3.5 w-3.5" />
                   )}
-                </span>
-                <div className="flex items-center gap-1">
-                  <TaskStatusChip task={task} />
-                  {task.parentTitle && (
-                    <span className="hidden max-w-32 truncate rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground sm:inline">
-                      {task.parentTitle}
-                    </span>
-                  )}
-                  {showLabels && <TaskLabels labels={task.labels ?? []} />}
-
-                  {pullRequests.length === 1 && (
-                    <HoverCard openDelay={200} closeDelay={100}>
-                      <HoverCardTrigger asChild>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(pullRequests[0].url, "_blank");
-                          }}
-                          className="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-border bg-sidebar text-[10px] font-medium text-muted-foreground"
-                        >
-                          {getPRInfo(pullRequests[0]).icon}
-                          <span>#{pullRequests[0].externalId}</span>
-                        </button>
-                      </HoverCardTrigger>
-                      <HoverCardContent
-                        className="w-72 p-3"
-                        side="bottom"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            {getPRInfo(pullRequests[0]).icon}
-                            <span>{getPRInfo(pullRequests[0]).status}</span>
-                            <span className="text-muted-foreground/50">•</span>
-                            <span>#{pullRequests[0].externalId}</span>
-                          </div>
-                          <p className="text-sm font-medium leading-snug">
-                            {pullRequests[0].title || t("tasks:pr.label")}
-                          </p>
-                        </div>
-                      </HoverCardContent>
-                    </HoverCard>
-                  )}
-
-                  {pullRequests.length > 1 &&
-                    (() => {
-                      const hasOpen = pullRequests.some(
-                        (pr) => !pr.metadata?.merged && !pr.metadata?.draft,
-                      );
-                      const allMerged = pullRequests.every(
-                        (pr) => pr.metadata?.merged,
-                      );
-                      const iconColor = allMerged
-                        ? "text-info-foreground"
-                        : hasOpen
-                          ? "text-success-foreground"
-                          : "text-muted-foreground";
-
-                      return (
-                        <HoverCard openDelay={200} closeDelay={100}>
-                          <HoverCardTrigger asChild>
-                            <button
-                              type="button"
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-border bg-sidebar text-[10px] font-medium text-muted-foreground"
-                            >
-                              <GitPullRequest
-                                className={`h-3 w-3 ${iconColor}`}
-                              />
-                              <span>
-                                {t("tasks:pr.count", {
-                                  count: pullRequests.length,
-                                })}
-                              </span>
-                            </button>
-                          </HoverCardTrigger>
-                          <HoverCardContent
-                            className="w-auto min-w-56 max-w-96 p-1"
-                            side="bottom"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {pullRequests.map((pr, index) => {
-                              const prInfo = getPRInfo(pr);
-                              const repoMatch = pr.url.match(
-                                /github\.com\/([^/]+\/[^/]+)\/pull/,
-                              );
-                              const repoName = repoMatch ? repoMatch[1] : null;
-                              return (
-                                <div key={pr.id}>
-                                  {index > 0 && (
-                                    <hr className="border-border my-1" />
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      window.open(pr.url, "_blank")
-                                    }
-                                    className="w-full px-2 py-1.5 text-left hover:bg-muted/50 rounded transition-colors"
-                                  >
-                                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                                      {prInfo.icon}
-                                      <span>
-                                        {repoName}#{pr.externalId}
-                                      </span>
-                                    </div>
-                                    <p className="text-xs leading-tight line-clamp-2 mt-0.5">
-                                      {pr.title || t("tasks:pr.label")}
-                                    </p>
-                                    <span className="text-[10px] text-muted-foreground">
-                                      {prInfo.status}
-                                    </span>
-                                  </button>
-                                </div>
-                              );
-                            })}
-                          </HoverCardContent>
-                        </HoverCard>
-                      );
-                    })()}
+                </button>
+              ) : (
+                <span className="w-5 shrink-0" />
+              )}
+              {showPriority && (
+                <div className="flex-shrink-0 first:[&_svg]:h-4 first:[&_svg]:w-4">
+                  {getPriorityIcon(task.priority ?? "")}
                 </div>
+              )}
+              {showTaskNumbers && (
+                <div className="text-xs font-mono text-muted-foreground flex-shrink-0">
+                  {projectSlug}-{task.number}
+                </div>
+              )}
+
+              <span
+                className={cn(
+                  "min-w-0 truncate text-sm text-foreground",
+                  isEpic && "font-medium",
+                )}
+              >
+                {task.title}
+                {isEpic && (task.childCount ?? 0) > 0 && (
+                  <span className="ml-2 text-[10px] font-medium text-muted-foreground">
+                    {task.childCount}
+                  </span>
+                )}
+              </span>
+              {showLabels && <TaskLabels labels={task.labels ?? []} />}
+              <div className="ml-auto flex items-center gap-1">
+                {pullRequests.length === 1 && (
+                  <HoverCard openDelay={200} closeDelay={100}>
+                    <HoverCardTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(pullRequests[0].url, "_blank");
+                        }}
+                        className="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-border bg-sidebar text-[10px] font-medium text-muted-foreground"
+                      >
+                        {getPRInfo(pullRequests[0]).icon}
+                        <span>#{pullRequests[0].externalId}</span>
+                      </button>
+                    </HoverCardTrigger>
+                    <HoverCardContent
+                      className="w-72 p-3"
+                      side="bottom"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          {getPRInfo(pullRequests[0]).icon}
+                          <span>{getPRInfo(pullRequests[0]).status}</span>
+                          <span className="text-muted-foreground/50">•</span>
+                          <span>#{pullRequests[0].externalId}</span>
+                        </div>
+                        <p className="text-sm font-medium leading-snug">
+                          {pullRequests[0].title || t("tasks:pr.label")}
+                        </p>
+                      </div>
+                    </HoverCardContent>
+                  </HoverCard>
+                )}
+
+                {pullRequests.length > 1 &&
+                  (() => {
+                    const hasOpen = pullRequests.some(
+                      (pr) => !pr.metadata?.merged && !pr.metadata?.draft,
+                    );
+                    const allMerged = pullRequests.every(
+                      (pr) => pr.metadata?.merged,
+                    );
+                    const iconColor = allMerged
+                      ? "text-info-foreground"
+                      : hasOpen
+                        ? "text-success-foreground"
+                        : "text-muted-foreground";
+
+                    return (
+                      <HoverCard openDelay={200} closeDelay={100}>
+                        <HoverCardTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-border bg-sidebar text-[10px] font-medium text-muted-foreground"
+                          >
+                            <GitPullRequest
+                              className={`h-3 w-3 ${iconColor}`}
+                            />
+                            <span>
+                              {t("tasks:pr.count", {
+                                count: pullRequests.length,
+                              })}
+                            </span>
+                          </button>
+                        </HoverCardTrigger>
+                        <HoverCardContent
+                          className="w-auto min-w-56 max-w-96 p-1"
+                          side="bottom"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {pullRequests.map((pr, index) => {
+                            const prInfo = getPRInfo(pr);
+                            const repoMatch = pr.url.match(
+                              /github\.com\/([^/]+\/[^/]+)\/pull/,
+                            );
+                            const repoName = repoMatch ? repoMatch[1] : null;
+                            return (
+                              <div key={pr.id}>
+                                {index > 0 && (
+                                  <hr className="border-border my-1" />
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => window.open(pr.url, "_blank")}
+                                  className="w-full px-2 py-1.5 text-left hover:bg-muted/50 rounded transition-colors"
+                                >
+                                  <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                    {prInfo.icon}
+                                    <span>
+                                      {repoName}#{pr.externalId}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs leading-tight line-clamp-2 mt-0.5">
+                                    {pr.title || t("tasks:pr.label")}
+                                  </p>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {prInfo.status}
+                                  </span>
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </HoverCardContent>
+                      </HoverCard>
+                    );
+                  })()}
               </div>
             </div>
 
-            {showDueDates && task.dueDate && (
+            <div className="min-w-0">
+              <TaskStatusChip task={task} />
+            </div>
+
+            <div className="min-w-0">
+              {isEpic ? (
+                <span className="inline-flex max-w-full truncate rounded bg-violet-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-300">
+                  {t("tasks:epics.badge", { defaultValue: "Epic" })}
+                </span>
+              ) : task.parentId ? (
+                <button
+                  type="button"
+                  className="block max-w-full truncate text-left text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                  title={task.parentTitle ?? undefined}
+                  onClick={(event) =>
+                    openEpicPage(event, task.parentId as string)
+                  }
+                  onPointerDown={(event) => event.stopPropagation()}
+                >
+                  {task.parentTitle ||
+                    t("tasks:epics.badge", { defaultValue: "Epic" })}
+                </button>
+              ) : (
+                <span className="text-[11px] text-muted-foreground/50">—</span>
+              )}
+            </div>
+
+            {showDueDates && task.dueDate ? (
               <div
                 className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded flex-shrink-0 ${dueDateStatusColors[getDueDateStatus(task.dueDate, taskIsCompleted)]}`}
               >
@@ -398,9 +457,11 @@ function TaskRow({
                     "no-due-date") && <Calendar className="w-3 h-3" />}
                 <span>{format(new Date(task.dueDate), "MMM d")}</span>
               </div>
+            ) : (
+              <span />
             )}
 
-            {showAssignees && (
+            {showAssignees ? (
               <div className="flex-shrink-0">
                 {task.userId ? (
                   <Avatar className="h-6 w-6">
@@ -423,6 +484,8 @@ function TaskRow({
                   </div>
                 )}
               </div>
+            ) : (
+              <span />
             )}
           </div>
         </ContextMenuTrigger>

@@ -61,7 +61,14 @@ vi.mock("@/store/user-preferences", () => ({
     showDueDates: true,
     showLabels: true,
     showTaskNumbers: true,
+    showPriority: true,
   }),
+}));
+
+vi.mock("../task/task-status-chip", () => ({
+  default: ({ task }: { task: Task }) => (
+    <span data-testid="status-column">{task.status}</span>
+  ),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -105,7 +112,39 @@ describe("TaskRow", () => {
 
     expect(screen.getByText("Bug")).toBeVisible();
     expect(screen.getByText("#42")).toBeVisible();
+    expect(screen.getByTestId("status-column")).toHaveTextContent("to-do");
     expect(useExternalLinks).not.toHaveBeenCalled();
     expect(useGetLabelsByTask).not.toHaveBeenCalled();
+  });
+
+  it("shows the parent epic in its own column", () => {
+    render(
+      <TaskRow
+        task={{
+          ...task,
+          parentId: "epic-1",
+          parentTitle: "Épopée — Publication des plannings",
+        }}
+        projectSlug="kan"
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", {
+        name: "Épopée — Publication des plannings",
+      }),
+    ).toBeVisible();
+  });
+
+  it("marks an epic row with the epic badge", () => {
+    render(
+      <TaskRow
+        task={{ ...task, childIds: ["child-1"], childCount: 4 }}
+        projectSlug="kan"
+        expanded
+      />,
+    );
+
+    expect(screen.getByText("tasks:epics.badge")).toBeVisible();
   });
 });

@@ -36,6 +36,7 @@ export default function TaskStatusPopover({
         label: col.name,
         icon: col.icon,
         isFinal: col.isFinal,
+        color: col.color,
       })),
     [columns],
   );
@@ -96,8 +97,16 @@ export default function TaskStatusPopover({
                 className="w-full justify-start gap-2 h-8 px-2 rounded-none first:rounded-t-md last:rounded-b-md"
                 onClick={() => handleStatusChange(status.value)}
               >
-                {getColumnIcon(status.value, status.isFinal, status.icon)}
-                <span className="text-sm">
+                {getColumnIcon(
+                  status.value,
+                  status.isFinal,
+                  status.icon,
+                  status.color,
+                )}
+                <span
+                  className="text-sm"
+                  style={status.color ? { color: status.color } : undefined}
+                >
                   {getStatusDisplayLabel(status.value, status.label)}
                 </span>
                 {task.status === status.value ? (

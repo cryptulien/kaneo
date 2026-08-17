@@ -17,6 +17,7 @@ import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-
 import { useBoardSort } from "@/hooks/use-board-sort";
 import { useRegisterShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useTaskFiltersWithLabelsSupport } from "@/hooks/use-task-filters-with-labels-support";
+import { isEpicTask } from "@/lib/epic-tree";
 import { sortTasks } from "@/lib/sort-tasks";
 import useProjectStore from "@/store/project";
 import { useUserPreferencesStore } from "@/store/user-preferences";
@@ -126,6 +127,19 @@ function RouteComponent() {
       setProject(data);
     }
   }, [data, setProject]);
+
+  useEffect(() => {
+    if (!taskId || !project) return;
+    const opened = project.columns
+      ?.flatMap((column) => column.tasks)
+      .find((task) => task.id === taskId);
+    if (!opened || !isEpicTask(opened)) return;
+    navigate({
+      to: "/dashboard/workspace/$workspaceId/project/$projectId/task/$taskId",
+      params: { workspaceId, projectId, taskId },
+      replace: true,
+    });
+  }, [taskId, project, navigate, workspaceId, projectId]);
 
   const openBoardSearch = useCallback(() => {
     setIsBoardSearchMounted(true);

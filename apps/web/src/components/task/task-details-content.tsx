@@ -45,12 +45,29 @@ export default function TaskDetailsContent({
     (rel) => rel.relationType === "subtask" && rel.targetTaskId === taskId,
   );
   const parentTask = parentRelation?.sourceTask;
+  const childRelations = relations.filter(
+    (rel) => rel.relationType === "subtask" && rel.sourceTaskId === taskId,
+  );
+  const isEpic = childRelations.length > 0;
 
   if (!taskId) return null;
 
   return (
     <div className={`${className} min-w-0 gap-4 overflow-x-hidden`}>
       <div className="flex min-w-0 flex-col gap-2.5">
+        {isEpic && (
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center rounded-md bg-violet-500/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-300">
+              {t("tasks:epics.badge", { defaultValue: "Epic" })}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {t("tasks:epics.childCount", {
+                defaultValue: "{{count}} tickets",
+                count: childRelations.length,
+              })}
+            </span>
+          </div>
+        )}
         {parentTask && (
           <button
             type="button"

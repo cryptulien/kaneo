@@ -1834,7 +1834,17 @@
 		"listView": {
 			"addTask": "Add task",
 			"archiveAllTooltip": "Archive all completed tasks",
-			"noTasks": "No tasks"
+			"noTasks": "No tasks",
+			"title": "Title",
+			"status": "Status",
+			"epic": "Epic"
+		},
+		"epics": {
+			"badge": "Epic",
+			"collapse": "Collapse",
+			"expand": "Expand",
+			"childCount_one": "{{count}} ticket",
+			"childCount_other": "{{count}} tickets"
 		},
 		"kanban": {
 			"addTask": "Add task"

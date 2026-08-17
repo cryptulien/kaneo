@@ -1834,7 +1834,17 @@
 		"listView": {
 			"addTask": "Ajouter une tâche",
 			"archiveAllTooltip": "Archiver toutes les tâches terminées",
-			"noTasks": "Aucune tâche"
+			"noTasks": "Aucune tâche",
+			"title": "Titre",
+			"status": "Statut",
+			"epic": "Épopée"
+		},
+		"epics": {
+			"badge": "Épopée",
+			"collapse": "Replier",
+			"expand": "Déplier",
+			"childCount_one": "{{count}} ticket",
+			"childCount_other": "{{count}} tickets"
 		},
 		"kanban": {
 			"addTask": "Ajouter une tâche"

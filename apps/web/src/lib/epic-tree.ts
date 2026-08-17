@@ -19,6 +19,66 @@ export function topLevelTasksInColumn(tasks: Task[]): Task[] {
   });
 }
 
+export type EpicListRow = {
+  task: Task;
+  depth: number;
+  isEpicHeader: boolean;
+};
+
+export function isEpicTask(task: Task): boolean {
+  return (task.childCount ?? task.childIds?.length ?? 0) > 0;
+}
+
+export function groupColumnTasksByEpic(
+  columnTasks: Task[],
+  tasksById: Map<string, Task>,
+  expanded: Record<string, boolean>,
+): EpicListRow[] {
+  const columnIds = new Set(columnTasks.map((task) => task.id));
+  const emitted = new Set<string>();
+  const rows: EpicListRow[] = [];
+
+  const localChildrenOf = (parentId: string): Task[] =>
+    columnTasks.filter((task) => task.parentId === parentId);
+
+  const appendChildren = (parentId: string, depth: number) => {
+    const children = localChildrenOf(parentId);
+    if (expanded[parentId] === false) {
+      for (const child of children) emitted.add(child.id);
+      return;
+    }
+    for (const child of children) {
+      emitted.add(child.id);
+      rows.push({ task: child, depth, isEpicHeader: false });
+      appendChildren(child.id, depth + 1);
+    }
+  };
+
+  for (const task of columnTasks) {
+    if (emitted.has(task.id)) continue;
+
+    const parent = task.parentId ? tasksById.get(task.parentId) : undefined;
+
+    if (parent && columnIds.has(parent.id)) continue;
+
+    if (parent && !columnIds.has(parent.id)) {
+      if (emitted.has(parent.id)) continue;
+      emitted.add(parent.id);
+      rows.push({ task: parent, depth: 0, isEpicHeader: true });
+      appendChildren(parent.id, 1);
+      continue;
+    }
+
+    emitted.add(task.id);
+    rows.push({ task, depth: 0, isEpicHeader: false });
+    if (isEpicTask(task) || localChildrenOf(task.id).length > 0) {
+      appendChildren(task.id, 1);
+    }
+  }
+
+  return rows;
+}
+
 export const SURFACE_TAGS = [
   "front",
   "back",

@@ -78,6 +78,34 @@ describe("TaskStatusPopover", () => {
     expect(await screen.findByRole("button", { name: /Ready/ })).toBeVisible();
   });
 
+  it("paints each status option with the column color", async () => {
+    useGetColumns.mockReturnValue({
+      data: [
+        {
+          id: "column-1",
+          slug: "to-do",
+          name: "Ready",
+          icon: null,
+          isFinal: false,
+          color: "#22c55e",
+        },
+      ],
+      isLoading: false,
+      isError: false,
+    });
+
+    render(
+      <TaskStatusPopover task={task}>
+        <Button>Status</Button>
+      </TaskStatusPopover>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Status" }));
+
+    const option = await screen.findByRole("button", { name: /Ready/ });
+    expect(option.querySelector("[style]")).toHaveStyle({ color: "#22c55e" });
+  });
+
   it("shows loading feedback while status options are loading", async () => {
     useGetColumns.mockReturnValue({
       data: undefined,

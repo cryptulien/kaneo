@@ -30,11 +30,10 @@ import { useRegisterShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { cn } from "@/lib/cn";
 import { getColumnIcon } from "@/lib/column";
 import {
+  groupColumnTasksByEpic,
   groupTasksBySurfaceTag,
   indexProjectTasks,
-  topLevelTasksInColumn,
 } from "@/lib/epic-tree";
-import type Task from "@/types/task";
 import { toast } from "@/lib/toast";
 import useBulkSelectionStore from "@/store/bulk-selection";
 import useProjectStore from "@/store/project";
@@ -42,6 +41,7 @@ import type { ProjectWithTasks } from "@/types/project";
 import BulkToolbar from "../bulk-selection/bulk-toolbar";
 import { ArchiveTasksModal } from "../shared/modals/archive-tasks-modal";
 import CreateTaskModal from "../shared/modals/create-task-modal";
+import { LIST_ROW_COLUMNS } from "./columns";
 import TaskRow from "./task-row";
 
 type ListViewProps = {
@@ -97,10 +97,14 @@ function ListView({
     if (project?.columns) {
       const visibleTaskIds = project.columns
         .filter((column) => expandedSections[column.id])
-        .flatMap((column) => column.tasks.map((task) => task.id));
+        .flatMap((column) =>
+          groupColumnTasksByEpic(column.tasks, tasksById, expandedEpics).map(
+            (row) => row.task.id,
+          ),
+        );
       setAvailableTasks(visibleTaskIds);
     }
-  }, [project, expandedSections, setAvailableTasks]);
+  }, [project, expandedSections, expandedEpics, tasksById, setAvailableTasks]);
 
   useEffect(() => {
     clearFocus();
@@ -386,29 +390,19 @@ function ListView({
             >
               <AnimatePresence initial={false} mode="popLayout">
                 {(groupByTag
-                  ? groupTasksBySurfaceTag(topLevelTasksInColumn(column.tasks))
+                  ? groupTasksBySurfaceTag(column.tasks)
                   : [
                       {
                         tag: "",
-                        tasks: topLevelTasksInColumn(column.tasks),
+                        tasks: column.tasks,
                       },
                     ]
                 ).flatMap((group) => {
-                  const rows = group.tasks.flatMap((task) => {
-                    const collect = (
-                      node: Task,
-                      depth: number,
-                    ): Array<{ node: Task; depth: number }> => {
-                      const collected = [{ node, depth }];
-                      if (!expandedEpics[node.id]) return collected;
-                      for (const childId of node.childIds ?? []) {
-                        const child = tasksById.get(childId);
-                        if (child) collected.push(...collect(child, depth + 1));
-                      }
-                      return collected;
-                    };
-                    return collect(task, 0);
-                  });
+                  const rows = groupColumnTasksByEpic(
+                    group.tasks,
+                    tasksById,
+                    expandedEpics,
+                  );
                   return [
                     groupByTag && group.tag ? (
                       <div
@@ -418,9 +412,9 @@ function ListView({
                         {group.tag}
                       </div>
                     ) : null,
-                    ...rows.map(({ node, depth }) => (
+                    ...rows.map(({ task: node, depth, isEpicHeader }) => (
                       <motion.div
-                        key={node.id}
+                        key={`${isEpicHeader ? "epic-header-" : ""}${node.id}`}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -433,11 +427,12 @@ function ListView({
                           task={node}
                           projectSlug={project?.slug ?? ""}
                           depth={depth}
-                          expanded={Boolean(expandedEpics[node.id])}
+                          isEpicHeader={isEpicHeader}
+                          expanded={expandedEpics[node.id] !== false}
                           onToggleExpand={() =>
                             setExpandedEpics((current) => ({
                               ...current,
-                              [node.id]: !current[node.id],
+                              [node.id]: current[node.id] === false,
                             }))
                           }
                         />
@@ -479,6 +474,18 @@ function ListView({
       modifiers={[snapCenterToCursor]}
     >
       <div className="w-full h-full overflow-auto bg-muted/20">
+        <div
+          className={cn(
+            LIST_ROW_COLUMNS,
+            "sticky top-0 z-10 border-b border-border/70 bg-muted/80 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground backdrop-blur",
+          )}
+        >
+          <span>{t("tasks:listView.title", { defaultValue: "Title" })}</span>
+          <span>{t("tasks:listView.status", { defaultValue: "Status" })}</span>
+          <span>{t("tasks:listView.epic", { defaultValue: "Epic" })}</span>
+          <span />
+          <span />
+        </div>
         <div className="divide-y divide-border/50">
           {project.columns.map((column) => (
             <ColumnSection key={column.id} column={column} />
