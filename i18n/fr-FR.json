@@ -681,7 +681,6 @@
 			"toastFinalOff": "La colonne n'est plus marquée comme terminée",
 			"toastUpdateError": "Échec de la mise à jour de la colonne",
 			"toastColorUpdated": "Couleur de colonne mise à jour",
-			"toastColorUpdated": "Couleur de colonne mise à jour",
 			"toastIconUpdated": "Icône de la colonne mise à jour",
 			"toastDeleted": "Colonne supprimée",
 			"toastDeleteError": "Échec de la suppression de la colonne",
