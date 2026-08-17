@@ -12,6 +12,7 @@ export const COLUMN_COLORS = [
 export const DEFAULT_COLUMN_COLORS: Record<string, string> = {
   backlog: "#6b7280",
   "to-do": "#2563eb",
+  "ia-ready": "#0891b2",
   "in-progress": "#d97706",
   "in-review": "#7c3aed",
   done: "#16a34a",

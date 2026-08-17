@@ -36,6 +36,8 @@ type UserPreferencesStore = {
   showPriority: boolean;
   setShowPriority: (show: boolean) => void;
   togglePriority: () => void;
+  groupByTag: boolean;
+  setGroupByTag: (group: boolean) => void;
   resetDisplayPreferences: () => void;
 
   sidebarDefaultOpen: boolean;
@@ -101,6 +103,8 @@ export const useUserPreferencesStore = create<UserPreferencesStore>()(
       setShowPriority: (show) => set({ showPriority: show }),
       togglePriority: () =>
         set((state) => ({ showPriority: !state.showPriority })),
+      groupByTag: false,
+      setGroupByTag: (group) => set({ groupByTag: group }),
       resetDisplayPreferences: () =>
         set({
           showAssignees: true,
@@ -108,6 +112,7 @@ export const useUserPreferencesStore = create<UserPreferencesStore>()(
           showLabels: true,
           showTaskNumbers: true,
           showPriority: true,
+          groupByTag: false,
         }),
 
       sidebarDefaultOpen: true,

@@ -60,6 +60,8 @@ type BoardToolbarProps = {
   sort: SortConfig;
   onSortChange: (sort: SortConfig) => void;
   onCreateTask?: () => void;
+  groupByTag?: boolean;
+  onGroupByTagChange?: (group: boolean) => void;
 };
 
 function CheckSlot({ checked }: { checked: boolean }) {
@@ -145,6 +147,8 @@ export default function BoardToolbar({
   sort,
   onSortChange,
   onCreateTask,
+  groupByTag = false,
+  onGroupByTagChange,
 }: BoardToolbarProps) {
   const { t } = useTranslation();
   const selectedStatusIds = filters.status ?? [];
@@ -760,6 +764,19 @@ export default function BoardToolbar({
           </div>
 
           <div className="inline-flex items-center gap-1">
+            {onGroupByTagChange && (
+              <button
+                type="button"
+                className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium transition-colors ${
+                  groupByTag
+                    ? "bg-accent text-foreground"
+                    : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                }`}
+                onClick={() => onGroupByTagChange(!groupByTag)}
+              >
+                {t("tasks:view.groupByTag", { defaultValue: "By tag" })}
+              </button>
+            )}
             {onCreateTask && (
               <button
                 type="button"

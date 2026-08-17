@@ -81,7 +81,8 @@ function RouteComponent() {
   const navigate = useNavigate();
   const { data } = useGetTasks(projectId);
   const { project, setProject } = useProjectStore();
-  const { viewMode, setViewMode } = useUserPreferencesStore();
+  const { viewMode, setViewMode, groupByTag, setGroupByTag } =
+    useUserPreferencesStore();
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [boardSearchQuery, setBoardSearchQuery] = useState("");
   const [isBoardSearchMounted, setIsBoardSearchMounted] = useState(false);
@@ -231,6 +232,8 @@ function RouteComponent() {
           sort={sort}
           onSortChange={setSort}
           onCreateTask={() => setIsTaskModalOpen(true)}
+          groupByTag={groupByTag}
+          onGroupByTagChange={setGroupByTag}
         />
 
         <div className="flex h-full flex-1 overflow-hidden bg-background">
@@ -244,6 +247,7 @@ function RouteComponent() {
               <ListView
                 project={sortedProject}
                 disableDragDrop={sort.field !== "position"}
+                groupByTag={groupByTag}
               />
             )
           ) : (

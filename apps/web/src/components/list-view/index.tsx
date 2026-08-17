@@ -29,7 +29,11 @@ import { useUpdateTask } from "@/hooks/mutations/task/use-update-task";
 import { useRegisterShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { cn } from "@/lib/cn";
 import { getColumnIcon } from "@/lib/column";
-import { indexProjectTasks, topLevelTasksInColumn } from "@/lib/epic-tree";
+import {
+  groupTasksBySurfaceTag,
+  indexProjectTasks,
+  topLevelTasksInColumn,
+} from "@/lib/epic-tree";
 import type Task from "@/types/task";
 import { toast } from "@/lib/toast";
 import useBulkSelectionStore from "@/store/bulk-selection";
@@ -43,9 +47,14 @@ import TaskRow from "./task-row";
 type ListViewProps = {
   project: ProjectWithTasks;
   disableDragDrop?: boolean;
+  groupByTag?: boolean;
 };
 
-function ListView({ project, disableDragDrop = false }: ListViewProps) {
+function ListView({
+  project,
+  disableDragDrop = false,
+  groupByTag = false,
+}: ListViewProps) {
   const { t } = useTranslation();
   const { setProject } = useProjectStore();
   const {
@@ -376,44 +385,65 @@ function ListView({ project, disableDragDrop = false }: ListViewProps) {
               strategy={verticalListSortingStrategy}
             >
               <AnimatePresence initial={false} mode="popLayout">
-                {topLevelTasksInColumn(column.tasks).flatMap((task) => {
-                  const collect = (
-                    node: Task,
-                    depth: number,
-                  ): Array<{ node: Task; depth: number }> => {
-                    const rows = [{ node, depth }];
-                    if (!expandedEpics[node.id]) return rows;
-                    for (const childId of node.childIds ?? []) {
-                      const child = tasksById.get(childId);
-                      if (child) rows.push(...collect(child, depth + 1));
-                    }
-                    return rows;
-                  };
-                  return collect(task, 0).map(({ node, depth }) => (
-                    <motion.div
-                      key={node.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{
-                        duration: 0.15,
-                        ease: [0.23, 1, 0.32, 1],
-                      }}
-                    >
-                      <TaskRow
-                        task={node}
-                        projectSlug={project?.slug ?? ""}
-                        depth={depth}
-                        expanded={Boolean(expandedEpics[node.id])}
-                        onToggleExpand={() =>
-                          setExpandedEpics((current) => ({
-                            ...current,
-                            [node.id]: !current[node.id],
-                          }))
-                        }
-                      />
-                    </motion.div>
-                  ));
+                {(groupByTag
+                  ? groupTasksBySurfaceTag(topLevelTasksInColumn(column.tasks))
+                  : [
+                      {
+                        tag: "",
+                        tasks: topLevelTasksInColumn(column.tasks),
+                      },
+                    ]
+                ).flatMap((group) => {
+                  const rows = group.tasks.flatMap((task) => {
+                    const collect = (
+                      node: Task,
+                      depth: number,
+                    ): Array<{ node: Task; depth: number }> => {
+                      const collected = [{ node, depth }];
+                      if (!expandedEpics[node.id]) return collected;
+                      for (const childId of node.childIds ?? []) {
+                        const child = tasksById.get(childId);
+                        if (child) collected.push(...collect(child, depth + 1));
+                      }
+                      return collected;
+                    };
+                    return collect(task, 0);
+                  });
+                  return [
+                    groupByTag && group.tag ? (
+                      <div
+                        key={`${column.id}-${group.tag}`}
+                        className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground bg-muted/40"
+                      >
+                        {group.tag}
+                      </div>
+                    ) : null,
+                    ...rows.map(({ node, depth }) => (
+                      <motion.div
+                        key={node.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{
+                          duration: 0.15,
+                          ease: [0.23, 1, 0.32, 1],
+                        }}
+                      >
+                        <TaskRow
+                          task={node}
+                          projectSlug={project?.slug ?? ""}
+                          depth={depth}
+                          expanded={Boolean(expandedEpics[node.id])}
+                          onToggleExpand={() =>
+                            setExpandedEpics((current) => ({
+                              ...current,
+                              [node.id]: !current[node.id],
+                            }))
+                          }
+                        />
+                      </motion.div>
+                    )),
+                  ];
                 })}
               </AnimatePresence>
             </SortableContext>

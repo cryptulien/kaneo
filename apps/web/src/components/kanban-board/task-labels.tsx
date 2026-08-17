@@ -53,7 +53,7 @@ export function TaskLabels({
               backgroundColor: validColor(label.color),
             }}
           />
-          <span className="max-w-20 truncate">{label.name}</span>
+          <span className="max-w-28 truncate">{label.name}</span>
         </Badge>
       ))}
     </div>

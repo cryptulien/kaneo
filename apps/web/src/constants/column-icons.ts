@@ -10,6 +10,7 @@ import projectIcons from "./project-icons";
 
 export const DEFAULT_COLUMN_ICON_NAMES = {
   "to-do": "Circle",
+  "ia-ready": "Wand2",
   "in-progress": "CircleDot",
   "in-review": "Search",
   done: "CheckCircle2",
