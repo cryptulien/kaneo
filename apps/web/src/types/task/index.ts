@@ -35,6 +35,10 @@ type Task = {
   columnId?: string | null;
   labels?: TaskLabel[];
   externalLinks?: TaskExternalLink[];
+  parentId?: string | null;
+  parentTitle?: string | null;
+  childIds?: string[];
+  childCount?: number;
 };
 
 export default Task;

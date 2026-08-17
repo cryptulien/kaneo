@@ -6,6 +6,8 @@ import {
   Calendar,
   CalendarClock,
   CalendarX,
+  ChevronDown,
+  ChevronRight,
   GitMerge,
   GitPullRequest,
 } from "lucide-react";
@@ -42,6 +44,7 @@ import useBulkSelectionStore from "@/store/bulk-selection";
 import useProjectStore from "@/store/project";
 import { useUserPreferencesStore } from "@/store/user-preferences";
 import type Task from "@/types/task";
+import TaskStatusChip from "../task/task-status-chip";
 import { Button } from "../ui/button";
 import { ContextMenu, ContextMenuTrigger } from "../ui/context-menu";
 import TaskCardContextMenuContent from "./task-card-context-menu/task-card-context-menu-content";
@@ -50,9 +53,16 @@ import { TaskLabels } from "./task-labels";
 type TaskCardProps = {
   task: Task;
   disableDragDrop?: boolean;
+  expanded?: boolean;
+  onToggleExpand?: () => void;
 };
 
-function TaskCard({ task, disableDragDrop = false }: TaskCardProps) {
+function TaskCard({
+  task,
+  disableDragDrop = false,
+  expanded = false,
+  onToggleExpand,
+}: TaskCardProps) {
   const { t } = useTranslation();
   const {
     attributes,
@@ -204,9 +214,36 @@ function TaskCard({ task, disableDragDrop = false }: TaskCardProps) {
               }
             }}
           >
-            {showTaskNumbers && (
-              <div className="mb-2 text-[10px] font-mono text-muted-foreground/90">
-                {project?.slug}-{task.number}
+            {(showTaskNumbers || (task.childCount ?? 0) > 0) && (
+              <div className="mb-2 flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground/90">
+                {(task.childCount ?? 0) > 0 && (
+                  <button
+                    type="button"
+                    className="inline-flex h-4 w-4 items-center justify-center rounded hover:bg-accent hover:text-foreground"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onToggleExpand?.();
+                    }}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    aria-expanded={expanded}
+                  >
+                    {expanded ? (
+                      <ChevronDown className="h-3 w-3" />
+                    ) : (
+                      <ChevronRight className="h-3 w-3" />
+                    )}
+                  </button>
+                )}
+                {showTaskNumbers && (
+                  <span>
+                    {project?.slug}-{task.number}
+                  </span>
+                )}
+                {(task.childCount ?? 0) > 0 && (
+                  <span className="rounded bg-muted px-1 text-[10px] font-medium">
+                    {task.childCount}
+                  </span>
+                )}
               </div>
             )}
 
@@ -257,6 +294,7 @@ function TaskCard({ task, disableDragDrop = false }: TaskCardProps) {
             )}
 
             <div className="flex items-center gap-1.5">
+              <TaskStatusChip task={task} />
               {showPriority && (
                 <span className="inline-flex items-center gap-1 rounded border border-border/70 bg-muted/55 px-2 py-1 text-[10px] font-medium text-muted-foreground">
                   {getPriorityIcon(task.priority ?? "")}

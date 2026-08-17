@@ -2,6 +2,7 @@ import {
   Archive,
   ArrowDownToLine,
   CalendarIcon,
+  Columns3,
   Link2,
   Menu,
   Trash2,
@@ -105,6 +106,7 @@ function BulkToolbar() {
   const canAssign = canAssignTasks();
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
 
   const selectedCount = selectedTaskIds.size;
 
@@ -427,6 +429,42 @@ function BulkToolbar() {
 
         {canEdit && (
           <>
+            <ToolbarSeparator orientation="vertical" className="my-1 h-5" />
+            <ToolbarGroup>
+              <Popover open={isStatusOpen} onOpenChange={setIsStatusOpen}>
+                <PopoverTrigger asChild>
+                  <Button size="sm" variant="ghost">
+                    <Columns3 className="size-4" />
+                    {t("tasks:bulk.changeStatus", {
+                      defaultValue: "Status",
+                    })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-52 p-1" align="center">
+                  {(project?.columns ?? []).map((col) => (
+                    <Button
+                      key={col.id}
+                      size="sm"
+                      variant="ghost"
+                      className="w-full justify-start gap-2"
+                      onClick={() => {
+                        void handleBulkChangeStatus(col.slug || col.id);
+                        setIsStatusOpen(false);
+                      }}
+                    >
+                      {getColumnIcon(
+                        col.id,
+                        col.isFinal,
+                        col.icon,
+                        col.color,
+                      )}
+                      {col.name}
+                    </Button>
+                  ))}
+                </PopoverContent>
+              </Popover>
+            </ToolbarGroup>
+
             <ToolbarSeparator orientation="vertical" className="my-1 h-5" />
             <ToolbarGroup>
               <Button size="sm" variant="ghost" onClick={handleMoveToBacklog}>

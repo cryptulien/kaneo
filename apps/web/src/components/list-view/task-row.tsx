@@ -6,6 +6,8 @@ import {
   Calendar,
   CalendarClock,
   CalendarX,
+  ChevronDown,
+  ChevronRight,
   GitMerge,
   GitPullRequest,
 } from "lucide-react";
@@ -44,6 +46,7 @@ import useBulkSelectionStore from "@/store/bulk-selection";
 import useProjectStore from "@/store/project";
 import { useUserPreferencesStore } from "@/store/user-preferences";
 import type Task from "@/types/task";
+import TaskStatusChip from "../task/task-status-chip";
 import TaskCardContextMenuContent from "../kanban-board/task-card-context-menu/task-card-context-menu-content";
 import { TaskLabels } from "../kanban-board/task-labels";
 import { ContextMenu, ContextMenuTrigger } from "../ui/context-menu";
@@ -51,9 +54,18 @@ import { ContextMenu, ContextMenuTrigger } from "../ui/context-menu";
 type TaskRowProps = {
   task: Task;
   projectSlug: string;
+  depth?: number;
+  expanded?: boolean;
+  onToggleExpand?: () => void;
 };
 
-function TaskRow({ task, projectSlug }: TaskRowProps) {
+function TaskRow({
+  task,
+  projectSlug,
+  depth = 0,
+  expanded = false,
+  onToggleExpand,
+}: TaskRowProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const {
@@ -199,9 +211,35 @@ function TaskRow({ task, projectSlug }: TaskRowProps) {
               "group relative flex items-center gap-3 px-4 py-1.5 transition-colors cursor-pointer",
               isTaskSelected ? "bg-accent/45" : "hover:bg-accent/60",
             )}
+            style={{ paddingLeft: 16 + depth * 20 }}
             {...attributes}
             {...listeners}
           >
+            {(task.childCount ?? 0) > 0 ? (
+              <button
+                type="button"
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggleExpand?.();
+                }}
+                onPointerDown={(event) => event.stopPropagation()}
+                aria-expanded={expanded}
+                title={
+                  expanded
+                    ? t("tasks:epics.collapse", { defaultValue: "Collapse" })
+                    : t("tasks:epics.expand", { defaultValue: "Expand" })
+                }
+              >
+                {expanded ? (
+                  <ChevronDown className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5" />
+                )}
+              </button>
+            ) : (
+              <span className="w-5 shrink-0" />
+            )}
             {showPriority && (
               <div className="flex-shrink-0 first:[&_svg]:h-4 first:[&_svg]:w-4">
                 {getPriorityIcon(task.priority ?? "")}
@@ -217,8 +255,19 @@ function TaskRow({ task, projectSlug }: TaskRowProps) {
               <div className="flex items-center gap-2 justify-between w-full">
                 <span className="text-sm text-foreground truncate">
                   {task.title}
+                  {(task.childCount ?? 0) > 0 && (
+                    <span className="ml-2 text-[10px] font-medium text-muted-foreground">
+                      {task.childCount}
+                    </span>
+                  )}
                 </span>
                 <div className="flex items-center gap-1">
+                  <TaskStatusChip task={task} />
+                  {task.parentTitle && (
+                    <span className="hidden max-w-32 truncate rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground sm:inline">
+                      {task.parentTitle}
+                    </span>
+                  )}
                   {showLabels && <TaskLabels labels={task.labels ?? []} />}
 
                   {pullRequests.length === 1 && (

@@ -6,6 +6,7 @@ import {
   gte,
   inArray,
   lte,
+  or,
   type SQL,
   sql,
 } from "drizzle-orm";
@@ -16,6 +17,7 @@ import {
   externalLinkTable,
   labelTable,
   projectTable,
+  taskRelationTable,
   taskTable,
   userTable,
 } from "../../database/schema";
@@ -215,6 +217,51 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
     });
   }
 
+  const parentByChild = new Map<string, string>();
+  const childrenByParent = new Map<string, string[]>();
+  if (taskIds.length > 0) {
+    const subtasks = await db
+      .select({
+        sourceTaskId: taskRelationTable.sourceTaskId,
+        targetTaskId: taskRelationTable.targetTaskId,
+      })
+      .from(taskRelationTable)
+      .where(
+        and(
+          eq(taskRelationTable.relationType, "subtask"),
+          or(
+            inArray(taskRelationTable.sourceTaskId, taskIds),
+            inArray(taskRelationTable.targetTaskId, taskIds),
+          ),
+        ),
+      );
+
+    for (const rel of subtasks) {
+      parentByChild.set(rel.targetTaskId, rel.sourceTaskId);
+      const siblings = childrenByParent.get(rel.sourceTaskId) ?? [];
+      siblings.push(rel.targetTaskId);
+      childrenByParent.set(rel.sourceTaskId, siblings);
+    }
+  }
+
+  const titleById = new Map(
+    paginatedTasks.map((task) => [task.id, task.title]),
+  );
+
+  const decorateTask = (task: (typeof paginatedTasks)[number]) => {
+    const parentId = parentByChild.get(task.id) ?? null;
+    const childIds = childrenByParent.get(task.id) ?? [];
+    return {
+      ...task,
+      labels: taskLabelsMap.get(task.id) || [],
+      externalLinks: taskExternalLinksMap.get(task.id) || [],
+      parentId,
+      parentTitle: parentId ? (titleById.get(parentId) ?? null) : null,
+      childIds,
+      childCount: childIds.length,
+    };
+  };
+
   const projectColumns = await db
     .select()
     .from(columnTable)
@@ -230,28 +277,16 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
     isFinal: column.isFinal,
     tasks: paginatedTasks
       .filter((task) => task.status === column.slug)
-      .map((task) => ({
-        ...task,
-        labels: taskLabelsMap.get(task.id) || [],
-        externalLinks: taskExternalLinksMap.get(task.id) || [],
-      })),
+      .map(decorateTask),
   }));
 
   const archivedTasks = paginatedTasks
     .filter((task) => task.status === "archived")
-    .map((task) => ({
-      ...task,
-      labels: taskLabelsMap.get(task.id) || [],
-      externalLinks: taskExternalLinksMap.get(task.id) || [],
-    }));
+    .map(decorateTask);
 
   const plannedTasks = paginatedTasks
     .filter((task) => task.status === "planned")
-    .map((task) => ({
-      ...task,
-      labels: taskLabelsMap.get(task.id) || [],
-      externalLinks: taskExternalLinksMap.get(task.id) || [],
-    }));
+    .map(decorateTask);
 
   return {
     data: {

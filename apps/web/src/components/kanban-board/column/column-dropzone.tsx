@@ -4,7 +4,10 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { indexProjectTasks, topLevelTasksInColumn } from "@/lib/epic-tree";
+import useProjectStore from "@/store/project";
+import type Task from "@/types/task";
 import type { ProjectWithTasks } from "@/types/project";
 import TaskCard from "../task-card";
 
@@ -32,6 +35,30 @@ export function ColumnDropzone({
   }, [isOver, onIsOverChange]);
 
   const reduceMotion = useReducedMotion();
+  const { project } = useProjectStore();
+  const [expandedEpics, setExpandedEpics] = useState<Record<string, boolean>>(
+    {},
+  );
+  const tasksById = useMemo(
+    () => indexProjectTasks(project?.columns ?? []),
+    [project?.columns],
+  );
+
+  const visible = topLevelTasksInColumn(column.tasks).flatMap((task) => {
+    const collect = (
+      node: Task,
+      depth: number,
+    ): Array<{ node: Task; depth: number }> => {
+      const rows = [{ node, depth }];
+      if (!expandedEpics[node.id]) return rows;
+      for (const childId of node.childIds ?? []) {
+        const child = tasksById.get(childId);
+        if (child) rows.push(...collect(child, depth + 1));
+      }
+      return rows;
+    };
+    return collect(task, 0);
+  });
 
   return (
     <div ref={setNodeRef} className="flex-1 min-h-0">
@@ -41,9 +68,9 @@ export function ColumnDropzone({
       >
         <div className="flex flex-col gap-2">
           <AnimatePresence initial={false} mode="popLayout">
-            {column.tasks.map((task) => (
+            {visible.map(({ node, depth }) => (
               <motion.div
-                key={task.id}
+                key={node.id}
                 initial={
                   reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98 }
                 }
@@ -54,8 +81,19 @@ export function ColumnDropzone({
                   reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98 }
                 }
                 transition={{ type: "spring", duration: 0.35, bounce: 0.15 }}
+                style={{ marginLeft: depth * 12 }}
               >
-                <TaskCard task={task} disableDragDrop={disableDragDrop} />
+                <TaskCard
+                  task={node}
+                  disableDragDrop={disableDragDrop}
+                  expanded={Boolean(expandedEpics[node.id])}
+                  onToggleExpand={() =>
+                    setExpandedEpics((current) => ({
+                      ...current,
+                      [node.id]: !current[node.id],
+                    }))
+                  }
+                />
               </motion.div>
             ))}
           </AnimatePresence>

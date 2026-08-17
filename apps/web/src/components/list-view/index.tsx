@@ -22,13 +22,15 @@ import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { produce } from "immer";
 import { Archive, ChevronRight, Flag, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { priorityColorsTaskCard } from "@/constants/priority-colors";
 import { useUpdateTask } from "@/hooks/mutations/task/use-update-task";
 import { useRegisterShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { cn } from "@/lib/cn";
 import { getColumnIcon } from "@/lib/column";
+import { indexProjectTasks, topLevelTasksInColumn } from "@/lib/epic-tree";
+import type Task from "@/types/task";
 import { toast } from "@/lib/toast";
 import useBulkSelectionStore from "@/store/bulk-selection";
 import useProjectStore from "@/store/project";
@@ -70,6 +72,13 @@ function ListView({ project, disableDragDrop = false }: ListViewProps) {
   });
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [activeColumn, setActiveColumn] = useState<string | null>(null);
+  const [expandedEpics, setExpandedEpics] = useState<Record<string, boolean>>(
+    {},
+  );
+  const tasksById = useMemo(
+    () => indexProjectTasks(project?.columns ?? []),
+    [project?.columns],
+  );
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
   const [columnToArchive, setColumnToArchive] = useState<
     ProjectWithTasks["columns"][number] | null
@@ -367,17 +376,45 @@ function ListView({ project, disableDragDrop = false }: ListViewProps) {
               strategy={verticalListSortingStrategy}
             >
               <AnimatePresence initial={false} mode="popLayout">
-                {column.tasks.map((task) => (
-                  <motion.div
-                    key={task.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
-                  >
-                    <TaskRow task={task} projectSlug={project?.slug ?? ""} />
-                  </motion.div>
-                ))}
+                {topLevelTasksInColumn(column.tasks).flatMap((task) => {
+                  const collect = (
+                    node: Task,
+                    depth: number,
+                  ): Array<{ node: Task; depth: number }> => {
+                    const rows = [{ node, depth }];
+                    if (!expandedEpics[node.id]) return rows;
+                    for (const childId of node.childIds ?? []) {
+                      const child = tasksById.get(childId);
+                      if (child) rows.push(...collect(child, depth + 1));
+                    }
+                    return rows;
+                  };
+                  return collect(task, 0).map(({ node, depth }) => (
+                    <motion.div
+                      key={node.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{
+                        duration: 0.15,
+                        ease: [0.23, 1, 0.32, 1],
+                      }}
+                    >
+                      <TaskRow
+                        task={node}
+                        projectSlug={project?.slug ?? ""}
+                        depth={depth}
+                        expanded={Boolean(expandedEpics[node.id])}
+                        onToggleExpand={() =>
+                          setExpandedEpics((current) => ({
+                            ...current,
+                            [node.id]: !current[node.id],
+                          }))
+                        }
+                      />
+                    </motion.div>
+                  ));
+                })}
               </AnimatePresence>
             </SortableContext>
 
