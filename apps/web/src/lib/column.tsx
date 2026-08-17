@@ -7,6 +7,7 @@ export const getColumnIcon = (
   columnId: string,
   isFinal?: boolean,
   iconName?: string | null,
+  color?: string | null,
 ) => {
   const resolvedIconName =
     iconName ||
@@ -16,14 +17,25 @@ export const getColumnIcon = (
   const Icon =
     resolvedIconName &&
     columnIcons[resolvedIconName as keyof typeof columnIcons];
+  const style = color ? { color } : undefined;
+  const className = color
+    ? "w-4 h-4"
+    : "w-4 h-4 text-muted-foreground";
 
   if (Icon) {
-    return <Icon className="w-4 h-4 text-muted-foreground" />;
+    return <Icon className={className} style={style} />;
   }
 
   return isFinal ? (
-    <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
+    <CheckCircle2 className={className} style={style} />
   ) : (
-    <Circle className="w-4 h-4 text-muted-foreground" />
+    <Circle className={className} style={style} />
   );
 };
+
+export function columnAccentStyle(color?: string | null): {
+  boxShadow?: string;
+} {
+  if (!color) return {};
+  return { boxShadow: `inset 3px 0 0 0 ${color}` };
+}

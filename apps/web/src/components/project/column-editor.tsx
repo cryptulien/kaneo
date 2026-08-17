@@ -9,6 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
+import { COLUMN_COLORS } from "@/constants/column-colors";
 import columnIcons, {
   DEFAULT_COLUMN_ICON_NAMES,
 } from "@/constants/column-icons";
@@ -90,6 +91,23 @@ export default function ColumnEditor({ projectId }: ColumnEditorProps) {
         isFinal
           ? t("settings:columnEditor.toastFinalOn")
           : t("settings:columnEditor.toastFinalOff"),
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("settings:columnEditor.toastUpdateError"),
+      );
+    }
+  };
+
+  const handleUpdateColor = async (id: string, color: string | null) => {
+    try {
+      await updateColumn({ id, projectId, data: { color } });
+      toast.success(
+        t("settings:columnEditor.toastColorUpdated", {
+          defaultValue: "Column color updated",
+        }),
       );
     } catch (error) {
       toast.error(
@@ -280,6 +298,23 @@ export default function ColumnEditor({ projectId }: ColumnEditorProps) {
                 </div>
               </PopoverContent>
             </Popover>
+            <div className="flex items-center gap-1 shrink-0">
+              {COLUMN_COLORS.map((swatch) => (
+                <button
+                  key={swatch.value}
+                  type="button"
+                  disabled={!canEdit}
+                  title={swatch.name}
+                  onClick={() => handleUpdateColor(col.id, swatch.value)}
+                  className={cn(
+                    "h-4 w-4 rounded-full border border-border/60",
+                    col.color === swatch.value &&
+                      "ring-2 ring-ring ring-offset-1 ring-offset-background",
+                  )}
+                  style={{ backgroundColor: swatch.value }}
+                />
+              ))}
+            </div>
             <Input
               defaultValue={col.name}
               className="h-8 text-sm flex-1"

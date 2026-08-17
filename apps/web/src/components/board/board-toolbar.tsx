@@ -1,4 +1,4 @@
-import { Filter, PanelsTopLeft, Rows3, X } from "lucide-react";
+import { Filter, PanelsTopLeft, Plus, Rows3, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import SortControl from "@/components/common/sort-control";
@@ -59,6 +59,7 @@ type BoardToolbarProps = {
   setViewMode: (mode: "board" | "list") => void;
   sort: SortConfig;
   onSortChange: (sort: SortConfig) => void;
+  onCreateTask?: () => void;
 };
 
 function CheckSlot({ checked }: { checked: boolean }) {
@@ -143,12 +144,14 @@ export default function BoardToolbar({
   setViewMode,
   sort,
   onSortChange,
+  onCreateTask,
 }: BoardToolbarProps) {
   const { t } = useTranslation();
   const selectedStatusIds = filters.status ?? [];
   const selectedPriorityIds = filters.priority ?? [];
   const selectedAssigneeIds = filters.assignee ?? [];
   const selectedDueDateFilters = filters.dueDate ?? [];
+  const hiddenLabelIds = filters.hiddenLabels ?? [];
 
   const getStatusDisplayName = (statusId: string) => {
     const column = project?.columns?.find((col) => col.id === statusId);
@@ -156,7 +159,12 @@ export default function BoardToolbar({
   };
   const getStatusIcon = (statusId: string) => {
     const column = project?.columns?.find((col) => col.id === statusId);
-    return getColumnIcon(statusId, column?.isFinal, column?.icon);
+    return getColumnIcon(
+      statusId,
+      column?.isFinal,
+      column?.icon,
+      column?.color,
+    );
   };
 
   const getPriorityDisplayName = (priority: string) =>
@@ -249,6 +257,29 @@ export default function BoardToolbar({
   const clearLabelFilters = () => {
     if (!filters.labels || filters.labels.length === 0) return;
     for (const labelId of filters.labels) updateLabelFilter(labelId);
+  };
+
+  const isHiddenLabelGroupSelected = (label: {
+    name: string;
+    color: string;
+  }) => {
+    return workspaceLabels
+      .filter((l) => l.name === label.name && l.color === label.color)
+      .some((l) => hiddenLabelIds.includes(l.id));
+  };
+
+  const toggleHiddenLabelGroup = (label: { name: string; color: string }) => {
+    const matching = workspaceLabels.filter(
+      (l) => l.name === label.name && l.color === label.color,
+    );
+    const anySelected = matching.some((l) => hiddenLabelIds.includes(l.id));
+    const next = new Set(hiddenLabelIds);
+    for (const l of matching) {
+      if (anySelected) next.delete(l.id);
+      else next.add(l.id);
+    }
+    const values = Array.from(next);
+    updateFilter("hiddenLabels", values.length > 0 ? values : null);
   };
 
   return (
@@ -514,6 +545,67 @@ export default function BoardToolbar({
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
 
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className="h-8 rounded-md text-sm">
+                    {t("tasks:boardFilters.hideLabels", {
+                      defaultValue: "Hide labels",
+                    })}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-64">
+                    <DropdownMenuItem
+                      onClick={() => updateFilter("hiddenLabels", null)}
+                      className="h-8 rounded-md text-sm"
+                    >
+                      <CheckSlot checked={hiddenLabelIds.length === 0} />
+                      {t("tasks:boardFilters.hideNone", {
+                        defaultValue: "Hide none",
+                      })}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    {uniqueLabels.length > 0 ? (
+                      uniqueLabels.map((label) => (
+                        <DropdownMenuItem
+                          key={`hide-${label.id}`}
+                          onClick={() => toggleHiddenLabelGroup(label)}
+                          className="h-8 rounded-md text-sm"
+                        >
+                          <CheckSlot
+                            checked={isHiddenLabelGroupSelected(label)}
+                          />
+                          <span
+                            className="h-2.5 w-2.5 shrink-0 rounded-full"
+                            style={{
+                              backgroundColor:
+                                labelColors.find((c) => c.value === label.color)
+                                  ?.color || "var(--color-neutral-400)",
+                            }}
+                          />
+                          <span className="max-w-20 truncate">
+                            {label.name}
+                          </span>
+                        </DropdownMenuItem>
+                      ))
+                    ) : (
+                      <DropdownMenuItem
+                        disabled
+                        className="h-8 rounded-md text-sm text-muted-foreground"
+                      >
+                        {t("tasks:labels.empty")}
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+
+                <DropdownMenuItem
+                  onClick={() => updateFilter("hideDone", !filters.hideDone)}
+                  className="h-8 rounded-md text-sm"
+                >
+                  <CheckSlot checked={Boolean(filters.hideDone)} />
+                  {t("tasks:boardFilters.hideDone", {
+                    defaultValue: "Hide done columns",
+                  })}
+                </DropdownMenuItem>
+
                 {hasActiveFilters && (
                   <>
                     <DropdownMenuSeparator />
@@ -641,9 +733,45 @@ export default function BoardToolbar({
                 onClear={clearLabelFilters}
               />
             )}
+
+            {hiddenLabelIds.length > 0 && (
+              <ActiveFilterChip
+                subject={t("tasks:boardFilters.hideLabels", {
+                  defaultValue: "Hide labels",
+                })}
+                operator={t("tasks:boardFilters.operators.isAnyOf")}
+                value={t("tasks:boardFilters.selectedCount", {
+                  count: hiddenLabelIds.length,
+                })}
+                onClear={() => updateFilter("hiddenLabels", null)}
+              />
+            )}
+
+            {filters.hideDone && (
+              <ActiveFilterChip
+                subject={t("tasks:boardFilters.hideDone", {
+                  defaultValue: "Hide done",
+                })}
+                operator=""
+                value={t("common:actions.on", { defaultValue: "On" })}
+                onClear={() => updateFilter("hideDone", false)}
+              />
+            )}
           </div>
 
           <div className="inline-flex items-center gap-1">
+            {onCreateTask && (
+              <button
+                type="button"
+                className="inline-flex h-7 items-center gap-1.5 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                onClick={onCreateTask}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                {t("navigation:commandPalette.createTask", {
+                  defaultValue: "Create task",
+                })}
+              </button>
+            )}
             <button
               type="button"
               className={`inline-flex h-6 items-center gap-1 rounded-md px-2 text-xs font-medium transition-colors ${

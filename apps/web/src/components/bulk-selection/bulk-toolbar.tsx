@@ -2,6 +2,7 @@ import {
   Archive,
   ArrowDownToLine,
   CalendarIcon,
+  Link2,
   Menu,
   Trash2,
   X,
@@ -43,6 +44,7 @@ import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { getColumnIcon } from "@/lib/column";
+import { generateLink } from "@/lib/generate-link";
 import { getInitials } from "@/lib/get-initials";
 import { getPriorityLabel } from "@/lib/i18n/domain";
 import { getPriorityIcon } from "@/lib/priority";
@@ -141,6 +143,30 @@ function BulkToolbar() {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [selectAll, clearSelection]);
+
+  const handleCopyUrls = useCallback(async () => {
+    if (!project || !workspace?.id) return;
+    const urls = Array.from(selectedTaskIds).map((id) =>
+      generateLink(
+        `/dashboard/workspace/${workspace.id}/project/${project.id}/task/${id}`,
+      ),
+    );
+    try {
+      await navigator.clipboard.writeText(urls.join("\n"));
+      toast.success(
+        t("tasks:bulk.copyUrlsSuccess", {
+          defaultValue: "{{count}} URLs copied",
+          count: urls.length,
+        }),
+      );
+    } catch {
+      toast.error(
+        t("tasks:bulk.copyUrlsError", {
+          defaultValue: "Failed to copy task URLs",
+        }),
+      );
+    }
+  }, [project, workspace?.id, selectedTaskIds, t]);
 
   const handleMoveToBacklog = useCallback(async () => {
     try {
@@ -295,7 +321,7 @@ function BulkToolbar() {
         items: (project?.columns ?? []).map((col) => ({
           value: `status-${col.id}`,
           label: col.name,
-          icon: getColumnIcon(col.id, col.isFinal, col.icon),
+          icon: getColumnIcon(col.id, col.isFinal, col.icon, col.color),
           onRun: () => {
             void handleBulkChangeStatus(col.id);
           },
@@ -379,8 +405,6 @@ function BulkToolbar() {
   ]);
 
   if (selectedCount === 0) return null;
-  // Nothing the user can do in bulk → no toolbar.
-  if (!canEdit && !canAssign) return null;
 
   return (
     <div className="-translate-x-1/2 fixed bottom-6 left-1/2 z-50 transition-[translate,opacity] duration-200 ease-out starting:translate-y-3 starting:opacity-0 motion-reduce:starting:translate-y-0">
@@ -389,6 +413,16 @@ function BulkToolbar() {
           <span className="text-sm font-medium text-foreground">
             {t("tasks:bulk.selectedCount", { count: selectedCount })}
           </span>
+        </ToolbarGroup>
+
+        <ToolbarSeparator orientation="vertical" className="my-1 h-5" />
+        <ToolbarGroup>
+          <Button size="sm" variant="ghost" onClick={handleCopyUrls}>
+            <Link2 className="size-4" />
+            {t("tasks:bulk.copyUrls", {
+              defaultValue: "Copy URLs",
+            })}
+          </Button>
         </ToolbarGroup>
 
         {canEdit && (

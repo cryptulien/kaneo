@@ -54,7 +54,12 @@ export function ColumnHeader({ column }: ColumnHeaderProps) {
     <div className="flex items-center justify-between gap-2">
       <div className="flex min-w-0 items-center gap-2">
         <span className="text-muted-foreground">
-          {getColumnIcon(column.id, column.isFinal, column.icon)}
+          {getColumnIcon(
+            column.id,
+            column.isFinal,
+            column.icon,
+            column.color,
+          )}
         </span>
         <span className="truncate text-sm font-medium text-foreground/95">
           {column.name}
@@ -79,10 +84,11 @@ export function ColumnHeader({ column }: ColumnHeaderProps) {
           <button
             type="button"
             onClick={() => setIsTaskModalOpen(true)}
-            className="flex items-center rounded-md px-2 py-1 text-left text-muted-foreground transition-colors hover:bg-accent/50"
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-foreground/80 transition-colors hover:bg-accent/50"
             title={t("tasks:kanban.addTask")}
           >
-            <Plus className="w-4 h-4 text-muted-foreground" />
+            <Plus className="w-3.5 h-3.5" />
+            {t("tasks:kanban.addTask")}
           </button>
         )}
       </div>

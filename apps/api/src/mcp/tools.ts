@@ -542,7 +542,8 @@ export function registerMcpTools(
   registerTool(
     "create_task_comment",
     {
-      description: "Add a comment to a task.",
+      description:
+        "Add a comment on a task (NOT the description). Use this for agent progress: what was done, specs, reports, leftover work. Markdown is supported. Never overwrite the task description with a delivery log.",
       inputSchema: z.object({
         taskId: nonEmptyString,
         content: nonEmptyString,
@@ -944,6 +945,109 @@ export function registerMcpTools(
       run(() =>
         client.json(`/api/activity/${encodeURIComponent(args.taskId)}`),
       ),
+  );
+
+  registerTool(
+    "add_task_link",
+    {
+      description:
+        "Attach a spec, report, GitHub or other URL to a task as a comment (never in the description). kind: spec | report | github | other.",
+      inputSchema: z.object({
+        taskId: nonEmptyString,
+        url: nonEmptyString,
+        kind: z.enum(["spec", "report", "github", "other"]).default("other"),
+        title: optionalNonEmptyString,
+      }),
+    },
+    async (args) => {
+      const labels: Record<string, string> = {
+        spec: "Lien spec",
+        report: "Lien rapport",
+        github: "Lien GitHub",
+        other: "Lien",
+      };
+      const label = labels[args.kind] ?? "Lien";
+      const title = args.title?.trim() || args.url;
+      const content = `**${label}** : [${title}](${args.url})`;
+      return run(() =>
+        client.json(`/api/comment/${encodeURIComponent(args.taskId)}`, {
+          method: "POST",
+          body: JSON.stringify({ content }),
+        }),
+      );
+    },
+  );
+
+  registerTool(
+    "get_task_permalink",
+    {
+      description:
+        "Return the public Kaneo URL of a task (to paste to an agent or human).",
+      inputSchema: z.object({ taskId: nonEmptyString }),
+    },
+    async (args) =>
+      run(async () => {
+        const task = await client.json<Record<string, unknown>>(
+          `/api/task/${encodeURIComponent(args.taskId)}`,
+        );
+        const projectId = String(task.projectId ?? "");
+        const project = await client.json<Record<string, unknown>>(
+          `/api/project/${encodeURIComponent(projectId)}`,
+        );
+        const workspaceId = String(project.workspaceId ?? "");
+        const slug = String(project.slug ?? "");
+        const number = task.number;
+        const clientUrl = (
+          process.env.KANEO_CLIENT_URL || "http://localhost:5173"
+        ).replace(/\/+$/, "");
+        return {
+          url: `${clientUrl}/dashboard/workspace/${workspaceId}/project/${projectId}/task/${args.taskId}`,
+          identifier:
+            number != null && slug ? `${slug}-${number}` : args.taskId,
+          title: task.title,
+          status: task.status,
+          id: args.taskId,
+        };
+      }),
+  );
+
+  registerTool(
+    "get_task_permalinks",
+    {
+      description: "Return Kaneo URLs for several tasks at once.",
+      inputSchema: z.object({
+        taskIds: z.array(nonEmptyString).min(1),
+      }),
+    },
+    async (args) =>
+      run(async () => {
+        const clientUrl = (
+          process.env.KANEO_CLIENT_URL || "http://localhost:5173"
+        ).replace(/\/+$/, "");
+        const results = [];
+        for (const taskId of args.taskIds) {
+          const task = await client.json<Record<string, unknown>>(
+            `/api/task/${encodeURIComponent(taskId)}`,
+          );
+          const projectId = String(task.projectId ?? "");
+          const project = await client.json<Record<string, unknown>>(
+            `/api/project/${encodeURIComponent(projectId)}`,
+          );
+          const workspaceId = String(project.workspaceId ?? "");
+          const slug = String(project.slug ?? "");
+          results.push({
+            id: taskId,
+            url: `${clientUrl}/dashboard/workspace/${workspaceId}/project/${projectId}/task/${taskId}`,
+            identifier:
+              task.number != null && slug
+                ? `${slug}-${task.number}`
+                : taskId,
+            title: task.title,
+            status: task.status,
+          });
+        }
+        return { urls: results.map((r) => r.url), tasks: results };
+      }),
   );
 
   registerTool(

@@ -26,6 +26,7 @@ import {
   clientRegistrationSchema,
   oauthErrorSchema,
 } from "./schemas";
+import { verifyApiKey } from "../utils/verify-api-key";
 import { registerMcpTools, toMcpToolRegistrar } from "./tools";
 
 const publicApiUrl = (process.env.KANEO_API_URL || "http://localhost:1337")
@@ -57,17 +58,24 @@ async function validateBearerToken(
   req: Request,
 ): Promise<{ userId: string; token: string } | null> {
   const authHeader = req.headers.get("authorization");
-  if (!authHeader) return null;
-  const match = authHeader.match(/^Bearer\s+(\S+)$/i);
-  if (!match?.[1]) return null;
-  const token = match[1];
+  const apiKeyHeader = req.headers.get("x-api-key")?.trim();
+  const bearer = authHeader?.match(/^Bearer\s+(\S+)$/i)?.[1];
+  const token = bearer || apiKeyHeader;
+  if (!token) return null;
 
   const headers = new Headers();
   headers.set("authorization", `Bearer ${token}`);
   const session = await auth.api.getSession({ headers });
+  if (session?.user?.id) {
+    return { userId: session.user.id, token };
+  }
 
-  if (!session?.user?.id) return null;
-  return { userId: session.user.id, token };
+  const apiKey = await verifyApiKey(token);
+  if (apiKey?.valid && apiKey.key?.userId) {
+    return { userId: apiKey.key.userId, token };
+  }
+
+  return null;
 }
 
 const mcp = new Hono();

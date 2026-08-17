@@ -297,6 +297,11 @@ function ListView({ project, disableDragDrop = false }: ListViewProps) {
           "border-b border-border/50 transition-colors duration-150 overflow-auto",
           showDropIndicator && "border-l-4 border-l-ring bg-accent/35",
         )}
+        style={
+          column.color && !showDropIndicator
+            ? { boxShadow: `inset 3px 0 0 0 ${column.color}` }
+            : undefined
+        }
       >
         <div className="flex items-center justify-between py-2 px-4 bg-muted/60 border-b border-border/50">
           <button
@@ -311,7 +316,12 @@ function ListView({ project, disableDragDrop = false }: ListViewProps) {
               )}
             />
             <div className="flex items-center gap-2 h-4">
-              {getColumnIcon(column.id, column.isFinal, column.icon)}
+              {getColumnIcon(
+                column.id,
+                column.isFinal,
+                column.icon,
+                column.color,
+              )}
               <div className="flex items-center gap-1">
                 <span className="mt-1 mr-1">{column.name}</span>
                 <span className="text-xs text-muted-foreground mt-0.5">

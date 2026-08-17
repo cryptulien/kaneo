@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { columnAccentStyle } from "@/lib/column";
 import type { ProjectWithTasks } from "@/types/project";
 import { ColumnDropzone } from "./column-dropzone";
 import { ColumnHeader } from "./column-header";
@@ -18,6 +19,7 @@ function Column({ column, disableDragDrop = false }: ColumnProps) {
           ? "border-ring/40 bg-accent/60 shadow-md ring-2 ring-ring/30"
           : "border-border/70 bg-muted/40 shadow-xs/5 hover:border-border/90 dark:bg-card/90"
       }`}
+      style={columnAccentStyle(column.color)}
     >
       <div className="shrink-0 border-b border-border/60 px-3 py-2">
         <ColumnHeader column={column} />

@@ -843,6 +843,7 @@
 			"toastFinalOff": "Column unmarked as final",
 			"toastUpdateError": "Failed to update column",
 			"toastIconUpdated": "Column icon updated",
+			"toastColorUpdated": "Column color updated",
 			"toastDeleted": "Column deleted",
 			"toastDeleteError": "Failed to delete column",
 			"loading": "Loading columns...",
@@ -1877,6 +1878,9 @@
 		},
 		"bulk": {
 			"selectedCount": "{{count}} selected",
+			"copyUrls": "Copy URLs",
+			"copyUrlsSuccess": "{{count}} URLs copied",
+			"copyUrlsError": "Failed to copy task URLs",
 			"moveToBacklog": "Move to Backlog",
 			"moveToBacklogSuccess": "{{count}} tasks moved to backlog",
 			"moveToBacklogError": "Failed to move tasks to backlog",

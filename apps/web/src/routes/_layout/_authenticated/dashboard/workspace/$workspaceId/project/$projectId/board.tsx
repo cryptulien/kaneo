@@ -230,6 +230,7 @@ function RouteComponent() {
           setViewMode={setViewMode}
           sort={sort}
           onSortChange={setSort}
+          onCreateTask={() => setIsTaskModalOpen(true)}
         />
 
         <div className="flex h-full flex-1 overflow-hidden bg-background">

@@ -10,6 +10,8 @@ export type BoardFilters = {
   assignee: string[] | null;
   dueDate: string[] | null;
   labels: string[] | null;
+  hiddenLabels: string[] | null;
+  hideDone: boolean;
 };
 
 export const DUE_DATE_FILTER_VALUES = {
@@ -24,15 +26,13 @@ const DEFAULT_FILTERS: BoardFilters = {
   assignee: null,
   dueDate: null,
   labels: null,
+  hiddenLabels: null,
+  hideDone: false,
 };
 
-const FILTER_KEYS: Array<keyof BoardFilters> = [
-  "status",
-  "priority",
-  "assignee",
-  "dueDate",
-  "labels",
-];
+const FILTER_KEYS: Array<
+  Exclude<keyof BoardFilters, "hideDone">
+> = ["status", "priority", "assignee", "dueDate", "labels", "hiddenLabels"];
 
 function normalizeFilters(raw: unknown): BoardFilters {
   if (!raw || typeof raw !== "object") {
@@ -48,6 +48,10 @@ function normalizeFilters(raw: unknown): BoardFilters {
       const values = value.filter((v): v is string => typeof v === "string");
       normalized[key] = values.length > 0 ? values : null;
     }
+  }
+
+  if (typeof candidate.hideDone === "boolean") {
+    normalized.hideDone = candidate.hideDone;
   }
 
   return normalized;
@@ -153,6 +157,15 @@ export function useTaskFilters(
         }
       }
 
+      if (filters.hiddenLabels && filters.hiddenLabels.length > 0) {
+        const taskLabelIds = (task.labels ?? []).map((label) => label.id);
+        if (
+          filters.hiddenLabels.some((labelId) => taskLabelIds.includes(labelId))
+        ) {
+          return false;
+        }
+      }
+
       return true;
     });
   };
@@ -161,16 +174,19 @@ export function useTaskFilters(
     ? {
         ...project,
         columns:
-          project.columns?.map((column) => ({
-            ...column,
-            tasks: filterTasks(column.tasks),
-          })) ?? [],
+          project.columns
+            ?.filter((column) => !(filters.hideDone && column.isFinal))
+            .map((column) => ({
+              ...column,
+              tasks: filterTasks(column.tasks),
+            })) ?? [],
       }
     : null;
 
-  const hasActiveFilters = Object.values(filters).some(
-    (filter) => filter !== null,
-  );
+  const hasActiveFilters = Object.entries(filters).some(([key, filter]) => {
+    if (key === "hideDone") return Boolean(filter);
+    return filter !== null;
+  });
 
   const clearFilters = () => {
     setFilters(DEFAULT_FILTERS);
