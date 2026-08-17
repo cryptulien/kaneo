@@ -1,3 +1,4 @@
+import { SURFACE_TAGS, taskSurfaceTag } from "@/lib/epic-tree";
 import type Task from "@/types/task";
 
 export type SortField =
@@ -6,7 +7,8 @@ export type SortField =
   | "priority"
   | "dueDate"
   | "title"
-  | "number";
+  | "number"
+  | "tag";
 
 export type SortDirection = "asc" | "desc";
 
@@ -25,6 +27,13 @@ const priorityOrder: Record<string, number> = {
 function getPriorityValue(priority: string | null): number {
   if (!priority) return 0;
   return priorityOrder[priority] ?? 0;
+}
+
+function getTagSortValue(task: Task): [number, string] {
+  const surface = taskSurfaceTag(task);
+  const surfaceIndex = (SURFACE_TAGS as readonly string[]).indexOf(surface);
+  if (surfaceIndex >= 0) return [surfaceIndex, surface];
+  return [SURFACE_TAGS.length + 1, ""];
 }
 
 export function sortTasks(tasks: Task[], config: SortConfig): Task[] {
@@ -61,6 +70,12 @@ export function sortTasks(tasks: Task[], config: SortConfig): Task[] {
       }
       case "number": {
         comparison = (a.number ?? 0) - (b.number ?? 0);
+        break;
+      }
+      case "tag": {
+        const [aRank, aName] = getTagSortValue(a);
+        const [bRank, bName] = getTagSortValue(b);
+        comparison = aRank - bRank || aName.localeCompare(bName);
         break;
       }
     }

@@ -1782,7 +1782,8 @@
 				"priority": "Priority",
 				"dueDate": "Due date",
 				"title": "Title",
-				"number": "Task number"
+				"number": "Task number",
+				"tag": "Tag"
 			}
 		},
 		"boardFilters": {
@@ -1837,7 +1838,7 @@
 			"noTasks": "No tasks",
 			"title": "Title",
 			"status": "Status",
-			"epic": "Epic"
+			"tags": "Tags"
 		},
 		"epics": {
 			"badge": "Epic",

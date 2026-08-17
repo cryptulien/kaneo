@@ -34,28 +34,57 @@ function validColor(value: string): string {
 
 export function TaskLabels({
   labels,
+  activeLabelIds,
+  onLabelClick,
 }: {
   labels: NonNullable<Task["labels"]>;
+  activeLabelIds?: string[];
+  onLabelClick?: (labelId: string) => void;
 }) {
-  if (!labels.length) return null;
+  const visible = labels.filter((label) => label.name.toLowerCase() !== "epic");
+  if (!visible.length) return null;
 
   return (
     <div className="flex flex-wrap gap-1">
-      {labels.map((label: { id: string; name: string; color: string }) => (
-        <Badge
-          key={label.id}
-          variant="outline"
-          className="px-2 py-0.5 text-[10px] flex items-center"
-        >
-          <span
-            className="inline-block w-1.5 h-1.5 mr-1 rounded-full"
-            style={{
-              backgroundColor: validColor(label.color),
+      {visible.map((label: { id: string; name: string; color: string }) => {
+        const active = activeLabelIds?.includes(label.id);
+        const badge = (
+          <Badge
+            key={label.id}
+            variant="outline"
+            className={`px-2 py-0.5 text-[10px] flex items-center ${
+              active ? "border-primary/50 bg-primary/10" : ""
+            }`}
+          >
+            <span
+              className="inline-block w-1.5 h-1.5 mr-1 rounded-full"
+              style={{
+                backgroundColor: validColor(label.color),
+              }}
+            />
+            <span className="max-w-28 truncate">{label.name}</span>
+          </Badge>
+        );
+
+        if (!onLabelClick) return badge;
+
+        return (
+          <button
+            key={label.id}
+            type="button"
+            className="rounded-md"
+            title={label.name}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onLabelClick(label.id);
             }}
-          />
-          <span className="max-w-28 truncate">{label.name}</span>
-        </Badge>
-      ))}
+            onPointerDown={(event) => event.stopPropagation()}
+          >
+            {badge}
+          </button>
+        );
+      })}
     </div>
   );
 }

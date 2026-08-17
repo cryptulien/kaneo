@@ -1782,7 +1782,8 @@
 				"priority": "Priorité",
 				"dueDate": "Date d'échéance",
 				"title": "Titre",
-				"number": "Numéro de tâche"
+				"number": "Numéro de tâche",
+				"tag": "Tag"
 			}
 		},
 		"boardFilters": {
@@ -1837,7 +1838,7 @@
 			"noTasks": "Aucune tâche",
 			"title": "Titre",
 			"status": "Statut",
-			"epic": "Épopée"
+			"tags": "Tags"
 		},
 		"epics": {
 			"badge": "Épopée",

@@ -59,7 +59,9 @@ type TaskRowProps = {
   depth?: number;
   expanded?: boolean;
   isEpicHeader?: boolean;
+  activeLabelIds?: string[];
   onToggleExpand?: () => void;
+  onToggleLabel?: (labelId: string) => void;
 };
 
 function TaskRow({
@@ -68,7 +70,9 @@ function TaskRow({
   depth = 0,
   expanded = false,
   isEpicHeader = false,
+  activeLabelIds,
   onToggleExpand,
+  onToggleLabel,
 }: TaskRowProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -188,20 +192,6 @@ function TaskRow({
     }
   };
 
-  const openEpicPage = (event: React.MouseEvent, epicId: string) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (!workspace || !project) return;
-    navigate({
-      to: "/dashboard/workspace/$workspaceId/project/$projectId/task/$taskId",
-      params: {
-        workspaceId: workspace.id,
-        projectId: project.id,
-        taskId: epicId,
-      },
-    });
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       handleClick(e as unknown as React.MouseEvent);
@@ -303,7 +293,6 @@ function TaskRow({
                   </span>
                 )}
               </span>
-              {showLabels && <TaskLabels labels={task.labels ?? []} />}
               <div className="ml-auto flex items-center gap-1">
                 {pullRequests.length === 1 && (
                   <HoverCard openDelay={200} closeDelay={100}>
@@ -420,27 +409,14 @@ function TaskRow({
               <TaskStatusChip task={task} />
             </div>
 
-            <div className="min-w-0">
-              {isEpic ? (
-                <span className="inline-flex max-w-full truncate rounded bg-violet-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-300">
-                  {t("tasks:epics.badge", { defaultValue: "Epic" })}
-                </span>
-              ) : task.parentId ? (
-                <button
-                  type="button"
-                  className="block max-w-full truncate text-left text-[11px] text-muted-foreground hover:text-foreground hover:underline"
-                  title={task.parentTitle ?? undefined}
-                  onClick={(event) =>
-                    openEpicPage(event, task.parentId as string)
-                  }
-                  onPointerDown={(event) => event.stopPropagation()}
-                >
-                  {task.parentTitle ||
-                    t("tasks:epics.badge", { defaultValue: "Epic" })}
-                </button>
-              ) : (
-                <span className="text-[11px] text-muted-foreground/50">—</span>
-              )}
+            <div className="min-w-0" data-testid="tags-column">
+              {showLabels ? (
+                <TaskLabels
+                  labels={task.labels ?? []}
+                  activeLabelIds={activeLabelIds}
+                  onLabelClick={onToggleLabel}
+                />
+              ) : null}
             </div>
 
             {showDueDates && task.dueDate ? (

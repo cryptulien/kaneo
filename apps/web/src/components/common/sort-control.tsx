@@ -39,6 +39,10 @@ export default function SortControl({ sort, onSortChange }: SortControlProps) {
     { field: "dueDate", label: t("tasks:sort.fields.dueDate") },
     { field: "title", label: t("tasks:sort.fields.title") },
     { field: "number", label: t("tasks:sort.fields.number") },
+    {
+      field: "tag",
+      label: t("tasks:sort.fields.tag", { defaultValue: "Tag" }),
+    },
   ];
   const isActive = sort.field !== "position";
   const activeLabel = sortFields.find((f) => f.field === sort.field)?.label;

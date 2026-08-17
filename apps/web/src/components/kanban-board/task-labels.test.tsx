@@ -14,4 +14,18 @@ describe("TaskLabels", () => {
 
     expect(screen.getByText("Bug")).toBeVisible();
   });
+
+  it("hides the epic label from the tags column", () => {
+    render(
+      <TaskLabels
+        labels={[
+          { id: "epic", name: "epic", color: "purple" },
+          { id: "front", name: "front", color: "blue" },
+        ]}
+      />,
+    );
+
+    expect(screen.queryByText("epic")).toBeNull();
+    expect(screen.getByText("front")).toBeVisible();
+  });
 });

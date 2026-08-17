@@ -34,6 +34,7 @@ import {
   groupTasksBySurfaceTag,
   indexProjectTasks,
 } from "@/lib/epic-tree";
+import type { SortConfig } from "@/lib/sort-tasks";
 import { toast } from "@/lib/toast";
 import useBulkSelectionStore from "@/store/bulk-selection";
 import useProjectStore from "@/store/project";
@@ -48,12 +49,20 @@ type ListViewProps = {
   project: ProjectWithTasks;
   disableDragDrop?: boolean;
   groupByTag?: boolean;
+  sort?: SortConfig;
+  onSortChange?: (sort: SortConfig) => void;
+  activeLabelIds?: string[];
+  onToggleLabel?: (labelId: string) => void;
 };
 
 function ListView({
   project,
   disableDragDrop = false,
   groupByTag = false,
+  sort,
+  onSortChange,
+  activeLabelIds,
+  onToggleLabel,
 }: ListViewProps) {
   const { t } = useTranslation();
   const { setProject } = useProjectStore();
@@ -429,6 +438,8 @@ function ListView({
                           depth={depth}
                           isEpicHeader={isEpicHeader}
                           expanded={expandedEpics[node.id] !== false}
+                          activeLabelIds={activeLabelIds}
+                          onToggleLabel={onToggleLabel}
                           onToggleExpand={() =>
                             setExpandedEpics((current) => ({
                               ...current,
@@ -482,7 +493,33 @@ function ListView({
         >
           <span>{t("tasks:listView.title", { defaultValue: "Title" })}</span>
           <span>{t("tasks:listView.status", { defaultValue: "Status" })}</span>
-          <span>{t("tasks:listView.epic", { defaultValue: "Epic" })}</span>
+          {onSortChange ? (
+            <button
+              type="button"
+              className={cn(
+                "text-left uppercase tracking-wide hover:text-foreground",
+                sort?.field === "tag" && "text-foreground",
+              )}
+              onClick={() =>
+                onSortChange({
+                  field: "tag",
+                  direction:
+                    sort?.field === "tag" && sort.direction === "asc"
+                      ? "desc"
+                      : "asc",
+                })
+              }
+            >
+              {t("tasks:listView.tags", { defaultValue: "Tags" })}
+              {sort?.field === "tag"
+                ? sort.direction === "asc"
+                  ? " ↑"
+                  : " ↓"
+                : ""}
+            </button>
+          ) : (
+            <span>{t("tasks:listView.tags", { defaultValue: "Tags" })}</span>
+          )}
           <span />
           <span />
         </div>

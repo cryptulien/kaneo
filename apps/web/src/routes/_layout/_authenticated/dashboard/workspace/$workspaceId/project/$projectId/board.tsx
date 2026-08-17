@@ -262,6 +262,10 @@ function RouteComponent() {
                 project={sortedProject}
                 disableDragDrop={sort.field !== "position"}
                 groupByTag={groupByTag}
+                sort={sort}
+                onSortChange={setSort}
+                activeLabelIds={filters.labels ?? undefined}
+                onToggleLabel={updateLabelFilter}
               />
             )
           ) : (
