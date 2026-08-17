@@ -115,8 +115,8 @@ export default function TaskDetailsSheet({
             compact={true}
           />
 
-          <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="px-4 py-4">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 min-w-0">
+            <div className="min-w-0 px-4 py-4">
               <TaskDetailsContent
                 taskId={currentTaskId}
                 projectId={projectId}

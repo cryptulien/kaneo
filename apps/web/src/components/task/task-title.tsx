@@ -74,21 +74,46 @@ export default function TaskTitle({ taskId }: TaskTitleProps) {
     [debouncedUpdate],
   );
 
+  const titleFieldRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const resizeTitle = useCallback((element: HTMLTextAreaElement | null) => {
+    if (!element) return;
+    element.style.height = "auto";
+    element.style.height = `${element.scrollHeight}px`;
+  }, []);
+
+  useEffect(() => {
+    resizeTitle(titleFieldRef.current);
+  }, [resizeTitle, task?.title, taskId]);
+
   return (
     <Form {...form}>
       <FormField
         control={form.control}
         name="title"
         render={({ field }) => (
-          <input
+          <textarea
             {...field}
-            type="text"
+            ref={(element) => {
+              field.ref(element);
+              titleFieldRef.current = element;
+              resizeTitle(element);
+            }}
+            rows={1}
             placeholder={t("tasks:detail.titlePlaceholder")}
             readOnly={!canEdit}
-            className="block h-auto w-full appearance-none border-0 bg-transparent p-0 font-heading text-[2rem] leading-[1.15] font-semibold tracking-[-0.02em] text-foreground outline-none placeholder:text-foreground/45"
+            className="block min-w-0 w-full max-w-full resize-none overflow-hidden break-words whitespace-pre-wrap appearance-none border-0 bg-transparent p-0 font-heading text-[2rem] leading-[1.15] font-semibold tracking-[-0.02em] text-foreground outline-none placeholder:text-foreground/45"
             onChange={(e) => {
-              field.onChange(e);
-              handleTitleChange(e.target.value);
+              const value = e.target.value.replace(/\n/g, " ");
+              field.onChange(value);
+              handleTitleChange(value);
+              resizeTitle(e.target);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                e.currentTarget.blur();
+              }
             }}
           />
         )}

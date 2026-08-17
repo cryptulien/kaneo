@@ -49,12 +49,12 @@ export default function TaskDetailsContent({
   if (!taskId) return null;
 
   return (
-    <div className={`${className} gap-4`}>
-      <div className="flex flex-col gap-2.5">
+    <div className={`${className} min-w-0 gap-4 overflow-x-hidden`}>
+      <div className="flex min-w-0 flex-col gap-2.5">
         {parentTask && (
           <button
             type="button"
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors w-fit"
+            className="flex min-w-0 max-w-full items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
             onClick={() =>
               navigate({
                 to: "/dashboard/workspace/$workspaceId/project/$projectId/task/$taskId",
@@ -66,8 +66,8 @@ export default function TaskDetailsContent({
               })
             }
           >
-            <ArrowUpRight className="size-3" />
-            <span>
+            <ArrowUpRight className="size-3 shrink-0" />
+            <span className="min-w-0 truncate">
               {t("tasks:detail.subtaskOf")}{" "}
               <span className="font-medium">{parentTask.title}</span>
             </span>
