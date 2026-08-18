@@ -138,6 +138,8 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
     assigneeId: userTable.id,
     assigneeImage: userTable.image,
     projectId: taskTable.projectId,
+    environment: taskTable.environment,
+    askerEmail: taskTable.askerEmail,
   };
 
   const query = db
