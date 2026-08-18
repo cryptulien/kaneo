@@ -16,7 +16,12 @@ function useCreateTask() {
       startDate,
       dueDate,
       priority,
-    }: CreateTaskRequest) =>
+      environment,
+      askerEmail,
+    }: CreateTaskRequest & {
+      environment?: "dev" | "preprod" | "prod";
+      askerEmail?: string;
+    }) =>
       createTask(
         title,
         description,
@@ -26,6 +31,8 @@ function useCreateTask() {
         startDate ? new Date(startDate) : undefined,
         dueDate ? new Date(dueDate) : undefined,
         priority,
+        environment,
+        askerEmail,
       ),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({

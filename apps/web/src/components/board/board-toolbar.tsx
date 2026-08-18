@@ -21,6 +21,7 @@ import {
   DUE_DATE_FILTER_VALUES,
 } from "@/hooks/use-task-filters";
 import { getColumnIcon } from "@/lib/column";
+import { ENVIRONMENT_META, TASK_ENVIRONMENTS } from "@/lib/environment";
 import { getInitials } from "@/lib/get-initials";
 import { getPriorityLabel } from "@/lib/i18n/domain";
 import { getPriorityIcon } from "@/lib/priority";
@@ -153,6 +154,7 @@ export default function BoardToolbar({
   const { t } = useTranslation();
   const selectedStatusIds = filters.status ?? [];
   const selectedPriorityIds = filters.priority ?? [];
+  const selectedEnvironmentIds = filters.environment ?? [];
   const selectedAssigneeIds = filters.assignee ?? [];
   const selectedDueDateFilters = filters.dueDate ?? [];
   const hiddenLabelIds = filters.hiddenLabels ?? [];
@@ -224,6 +226,14 @@ export default function BoardToolbar({
       ? selectedPriorityIds.filter((id) => id !== priority)
       : [...selectedPriorityIds, priority];
     updateFilter("priority", next.length > 0 ? next : null);
+  };
+
+  const toggleEnvironmentFilter = (environment: string) => {
+    const exists = selectedEnvironmentIds.includes(environment);
+    const next = exists
+      ? selectedEnvironmentIds.filter((id) => id !== environment)
+      : [...selectedEnvironmentIds, environment];
+    updateFilter("environment", next.length > 0 ? next : null);
   };
 
   const toggleAssigneeFilter = (userId: string) => {
@@ -391,6 +401,60 @@ export default function BoardToolbar({
                           <span className="truncate capitalize">
                             {getPriorityDisplayName(priority)}
                           </span>
+                        </button>
+                      ))}
+                    </div>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className="h-8 rounded-md text-sm">
+                    {t("tasks:boardFilters.subjects.environment", {
+                      defaultValue: "Environment",
+                    })}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-56">
+                    <div className="grid grid-cols-1 gap-1 p-1">
+                      <button
+                        className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-left text-xs ${
+                          selectedEnvironmentIds.length === 0
+                            ? "bg-accent text-accent-foreground"
+                            : "text-foreground/90 hover:bg-accent/60 hover:text-foreground"
+                        }`}
+                        onClick={() => updateFilter("environment", null)}
+                        type="button"
+                      >
+                        <CheckSlot
+                          checked={selectedEnvironmentIds.length === 0}
+                        />
+                        {t("tasks:boardFilters.allEnvironments", {
+                          defaultValue: "All environments",
+                        })}
+                      </button>
+                      {TASK_ENVIRONMENTS.map((environment) => (
+                        <button
+                          key={environment}
+                          className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-left text-xs ${
+                            selectedEnvironmentIds.includes(environment)
+                              ? "bg-accent text-accent-foreground"
+                              : "text-foreground/90 hover:bg-accent/60 hover:text-foreground"
+                          }`}
+                          onClick={() => toggleEnvironmentFilter(environment)}
+                          type="button"
+                        >
+                          <CheckSlot
+                            checked={selectedEnvironmentIds.includes(
+                              environment,
+                            )}
+                          />
+                          <span
+                            className="inline-block h-2 w-2 rounded-full"
+                            style={{
+                              backgroundColor:
+                                ENVIRONMENT_META[environment].color,
+                            }}
+                          />
+                          {ENVIRONMENT_META[environment].label}
                         </button>
                       ))}
                     </div>

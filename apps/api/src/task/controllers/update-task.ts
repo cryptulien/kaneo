@@ -4,6 +4,11 @@ import db from "../../database";
 import { columnTable, taskTable } from "../../database/schema";
 import { publishEvent } from "../../events";
 import { deleteOrphanedAssets } from "../../storage/cleanup-assets";
+import {
+  isTaskEnvironment,
+  isValidAskerEmail,
+  normalizeAskerEmail,
+} from "../environment";
 import { assertValidTaskStatus } from "../validate-task-fields";
 
 async function updateTask(
@@ -18,6 +23,8 @@ async function updateTask(
   position: number,
   userId?: string,
   currentUserId?: string,
+  environment?: string | null,
+  askerEmail?: string | null,
 ) {
   const [existingTask] = await db
     .select({
@@ -51,6 +58,20 @@ async function updateTask(
     ),
   });
 
+  const resolvedEnvironment =
+    environment === undefined
+      ? undefined
+      : environment && isTaskEnvironment(environment)
+        ? environment
+        : null;
+  const resolvedAsker =
+    askerEmail === undefined ? undefined : normalizeAskerEmail(askerEmail);
+  if (resolvedAsker !== undefined && !isValidAskerEmail(resolvedAsker)) {
+    throw new HTTPException(400, {
+      message: `Invalid asker email "${askerEmail ?? ""}"`,
+    });
+  }
+
   const [updatedTask] = await db
     .update(taskTable)
     .set({
@@ -64,6 +85,10 @@ async function updateTask(
       priority,
       position,
       userId: userId || null,
+      ...(resolvedEnvironment !== undefined
+        ? { environment: resolvedEnvironment }
+        : {}),
+      ...(resolvedAsker !== undefined ? { askerEmail: resolvedAsker } : {}),
     })
     .where(eq(taskTable.id, id))
     .returning();

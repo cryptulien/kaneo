@@ -11,6 +11,7 @@ export type BoardFilters = {
   dueDate: string[] | null;
   labels: string[] | null;
   hiddenLabels: string[] | null;
+  environment: string[] | null;
   hideDone: boolean;
 };
 
@@ -27,12 +28,19 @@ const DEFAULT_FILTERS: BoardFilters = {
   dueDate: null,
   labels: null,
   hiddenLabels: null,
+  environment: null,
   hideDone: false,
 };
 
-const FILTER_KEYS: Array<
-  Exclude<keyof BoardFilters, "hideDone">
-> = ["status", "priority", "assignee", "dueDate", "labels", "hiddenLabels"];
+const FILTER_KEYS: Array<Exclude<keyof BoardFilters, "hideDone">> = [
+  "status",
+  "priority",
+  "assignee",
+  "dueDate",
+  "labels",
+  "hiddenLabels",
+  "environment",
+];
 
 function normalizeFilters(raw: unknown): BoardFilters {
   if (!raw || typeof raw !== "object") {

@@ -22,6 +22,8 @@ type Task = {
   description: string | null;
   status: string;
   priority: string | null;
+  environment?: string | null;
+  askerEmail?: string | null;
   startDate: string | null;
   dueDate: string | null;
   position: number | null;

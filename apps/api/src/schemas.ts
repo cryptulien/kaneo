@@ -38,6 +38,8 @@ export const taskSchema = v.object({
     "high",
     "urgent",
   ] as const),
+  environment: v.optional(v.nullable(v.picklist(["dev", "preprod", "prod"]))),
+  askerEmail: v.optional(v.nullable(v.string())),
   startDate: v.optional(v.date()),
   dueDate: v.optional(v.date()),
   createdAt: v.date(),

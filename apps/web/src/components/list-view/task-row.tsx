@@ -38,6 +38,7 @@ import {
   getDueDateStatus,
   isTaskCompleted,
 } from "@/lib/due-date-status";
+import { DEFAULT_ASKER_EMAIL } from "@/lib/environment";
 import { isEpicTask } from "@/lib/epic-tree";
 import { getInitials } from "@/lib/get-initials";
 import { getPriorityIcon } from "@/lib/priority";
@@ -49,6 +50,8 @@ import { useUserPreferencesStore } from "@/store/user-preferences";
 import type Task from "@/types/task";
 import TaskCardContextMenuContent from "../kanban-board/task-card-context-menu/task-card-context-menu-content";
 import { TaskLabels } from "../kanban-board/task-labels";
+import TaskAskerPopover from "../task/task-asker-popover";
+import TaskEnvironmentChip from "../task/task-environment-chip";
 import TaskStatusChip from "../task/task-status-chip";
 import { ContextMenu, ContextMenuTrigger } from "../ui/context-menu";
 import { LIST_ROW_COLUMNS } from "./columns";
@@ -417,6 +420,24 @@ function TaskRow({
                   onLabelClick={onToggleLabel}
                 />
               ) : null}
+            </div>
+
+            <div className="min-w-0" data-testid="env-column">
+              <TaskEnvironmentChip task={task} />
+            </div>
+
+            <div className="min-w-0" data-testid="asker-column">
+              <TaskAskerPopover task={task}>
+                <button
+                  type="button"
+                  onClick={(event) => event.stopPropagation()}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  className="block max-w-full truncate text-left text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                  title={task.askerEmail || DEFAULT_ASKER_EMAIL}
+                >
+                  {task.askerEmail || DEFAULT_ASKER_EMAIL}
+                </button>
+              </TaskAskerPopover>
             </div>
 
             {showDueDates && task.dueDate ? (

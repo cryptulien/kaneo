@@ -19,7 +19,18 @@ async function updateTask(taskId: string, task: Task) {
       dueDate: task.dueDate?.toString(),
       position: task.position ?? 0,
       projectId: task.projectId,
-    },
+      ...((task as Task & { environment?: string | null }).environment !==
+      undefined
+        ? {
+            environment: (task.environment ?? null) as
+              | "dev"
+              | "preprod"
+              | "prod"
+              | null,
+          }
+        : {}),
+      ...(task.askerEmail !== undefined ? { askerEmail: task.askerEmail } : {}),
+    } as Parameters<(typeof client.task)[":id"]["$put"]>[0]["json"],
   });
 
   if (!response.ok) {

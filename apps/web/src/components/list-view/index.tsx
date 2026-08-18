@@ -532,6 +532,10 @@ function ListView({
           ) : (
             <span>{t("tasks:listView.tags", { defaultValue: "Tags" })}</span>
           )}
+          <span>
+            {t("tasks:listView.environment", { defaultValue: "Env" })}
+          </span>
+          <span>{t("tasks:listView.asker", { defaultValue: "Asker" })}</span>
           <span />
           <span />
         </div>

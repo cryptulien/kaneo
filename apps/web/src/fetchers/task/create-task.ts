@@ -15,6 +15,8 @@ async function createTask(
   startDate: Date | undefined,
   dueDate: Date | undefined,
   priority: CreateTaskRequest["priority"],
+  environment?: "dev" | "preprod" | "prod",
+  askerEmail?: string,
 ) {
   if (!projectId) {
     throw new Error("No project selected for task creation");
@@ -29,7 +31,9 @@ async function createTask(
       startDate: startDate?.toISOString() || undefined,
       dueDate: dueDate?.toISOString() || undefined,
       priority,
-    },
+      ...(environment ? { environment } : {}),
+      ...(askerEmail ? { askerEmail } : {}),
+    } as CreateTaskRequest,
     param: { projectId },
   });
 

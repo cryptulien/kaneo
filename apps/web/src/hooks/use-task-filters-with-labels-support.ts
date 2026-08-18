@@ -12,6 +12,7 @@ const DEFAULT_FILTERS: BoardFilters = {
   dueDate: null,
   labels: null,
   hiddenLabels: null,
+  environment: null,
   hideDone: false,
 };
 
@@ -22,6 +23,7 @@ const FILTER_KEYS: Array<Exclude<keyof BoardFilters, "hideDone">> = [
   "dueDate",
   "labels",
   "hiddenLabels",
+  "environment",
 ];
 
 function normalizeFilters(raw: unknown): BoardFilters {
@@ -193,6 +195,13 @@ export function useTaskFiltersWithLabelsSupport(
               taskLabelIds.includes(labelId),
             )
           ) {
+            return false;
+          }
+        }
+
+        if (filters.environment && filters.environment.length > 0) {
+          const env = task.environment ?? "";
+          if (!filters.environment.includes(env)) {
             return false;
           }
         }

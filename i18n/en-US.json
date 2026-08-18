@@ -1783,7 +1783,8 @@
 				"dueDate": "Due date",
 				"title": "Title",
 				"number": "Task number",
-				"tag": "Tag"
+				"tag": "Tag",
+				"environment": "Env"
 			}
 		},
 		"boardFilters": {
@@ -1838,7 +1839,9 @@
 			"noTasks": "No tasks",
 			"title": "Title",
 			"status": "Status",
-			"tags": "Tags"
+			"tags": "Tags",
+			"environment": "Env",
+			"asker": "Asker"
 		},
 		"epics": {
 			"badge": "Epic",

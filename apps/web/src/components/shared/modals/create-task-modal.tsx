@@ -47,6 +47,7 @@ import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { cn } from "@/lib/cn";
+import { ENVIRONMENT_META, TASK_ENVIRONMENTS } from "@/lib/environment";
 import { formatDateMedium } from "@/lib/format";
 import { getInitials } from "@/lib/get-initials";
 import { getPriorityIcon } from "@/lib/priority";
@@ -103,6 +104,8 @@ function normalizeTask(
     assigneeImage: task.assigneeImage ?? null,
     labels: task.labels ?? [],
     externalLinks: task.externalLinks ?? [],
+    environment: task.environment ?? "dev",
+    askerEmail: task.askerEmail ?? "julienlelandais@me.com",
   };
 }
 
@@ -185,6 +188,10 @@ function CreateTaskModal({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<Priority>("no-priority");
+  const [environment, setEnvironment] = useState<"dev" | "preprod" | "prod">(
+    "dev",
+  );
+  const [askerEmail, setAskerEmail] = useState("julienlelandais@me.com");
   const [assigneeId, setAssigneeId] = useState("");
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
@@ -247,6 +254,8 @@ function CreateTaskModal({
     setTitle("");
     setDescription("");
     setPriority("no-priority");
+    setEnvironment("dev");
+    setAskerEmail("julienlelandais@me.com");
     setAssigneeId("");
     setStartDate(undefined);
     setDueDate(undefined);
@@ -348,6 +357,8 @@ function CreateTaskModal({
       startDate: startDate ? startDate.toISOString() : undefined,
       dueDate: dueDate ? dueDate.toISOString() : undefined,
       status: draftStatus,
+      environment,
+      askerEmail,
     }).then((task) => normalizeTask(task));
 
     draftCreationPromiseRef.current = draftPromise;
@@ -377,6 +388,8 @@ function CreateTaskModal({
     resolvedProjectId,
     title,
     t,
+    environment,
+    askerEmail,
   ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -396,6 +409,8 @@ function CreateTaskModal({
               userId: assigneeId || null,
               status: taskStatus,
               priority,
+              environment,
+              askerEmail,
               startDate: startDate ? startDate.toISOString() : null,
               dueDate: dueDate ? dueDate.toISOString() : null,
               projectId: resolvedProjectId,
@@ -407,6 +422,8 @@ function CreateTaskModal({
               description: description.trim() || "",
               userId: assigneeId,
               priority,
+              environment,
+              askerEmail,
               projectId: resolvedProjectId,
               startDate: startDate ? startDate.toISOString() : undefined,
               dueDate: dueDate ? dueDate.toISOString() : undefined,
@@ -439,6 +456,8 @@ function CreateTaskModal({
         setTitle("");
         setDescription("");
         setPriority("no-priority");
+        setEnvironment("dev");
+        setAskerEmail("julienlelandais@me.com");
         setAssigneeId("");
         setStartDate(undefined);
         setDueDate(undefined);
@@ -763,6 +782,51 @@ function CreateTaskModal({
                   )}
                 </PopoverContent>
               </Popover>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors border border-border hover:bg-accent/50 text-foreground"
+                  >
+                    <span
+                      className="inline-block h-2 w-2 rounded-full"
+                      style={{
+                        backgroundColor: ENVIRONMENT_META[environment].color,
+                      }}
+                    />
+                    {ENVIRONMENT_META[environment].label}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-40 p-1" align="start">
+                  {TASK_ENVIRONMENTS.map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent/50 text-left h-8"
+                      onClick={() => setEnvironment(value)}
+                    >
+                      <span
+                        className="inline-block h-2 w-2 rounded-full"
+                        style={{
+                          backgroundColor: ENVIRONMENT_META[value].color,
+                        }}
+                      />
+                      {ENVIRONMENT_META[value].label}
+                      {environment === value && (
+                        <Check className="ml-auto h-4 w-4" />
+                      )}
+                    </button>
+                  ))}
+                </PopoverContent>
+              </Popover>
+
+              <Input
+                value={askerEmail}
+                onChange={(event) => setAskerEmail(event.target.value)}
+                placeholder="julienlelandais@me.com"
+                className="h-8 w-52 text-xs"
+              />
 
               <Popover>
                 <PopoverTrigger asChild>

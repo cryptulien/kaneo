@@ -1,3 +1,4 @@
+import { environmentSortRank } from "@/lib/environment";
 import { SURFACE_TAGS, taskSurfaceTag } from "@/lib/epic-tree";
 import type Task from "@/types/task";
 
@@ -8,7 +9,8 @@ export type SortField =
   | "dueDate"
   | "title"
   | "number"
-  | "tag";
+  | "tag"
+  | "environment";
 
 export type SortDirection = "asc" | "desc";
 
@@ -76,6 +78,12 @@ export function sortTasks(tasks: Task[], config: SortConfig): Task[] {
         const [aRank, aName] = getTagSortValue(a);
         const [bRank, bName] = getTagSortValue(b);
         comparison = aRank - bRank || aName.localeCompare(bName);
+        break;
+      }
+      case "environment": {
+        comparison =
+          environmentSortRank(a.environment) -
+          environmentSortRank(b.environment);
         break;
       }
     }

@@ -185,6 +185,16 @@ function buildFullTaskUpdateBody(
   if (startDate !== undefined) body.startDate = startDate;
   if (dueDate !== undefined) body.dueDate = dueDate;
   if (userId !== undefined) body.userId = userId;
+  const environment =
+    patch.environment !== undefined ? patch.environment : existing.environment;
+  if (environment !== undefined && environment !== null) {
+    body.environment = String(environment);
+  }
+  const askerEmail =
+    patch.askerEmail !== undefined ? patch.askerEmail : existing.askerEmail;
+  if (typeof askerEmail === "string") {
+    body.askerEmail = askerEmail;
+  }
   return body;
 }
 
@@ -430,6 +440,8 @@ export function registerMcpTools(
         startDate: optionalIsoDateTimeSchema,
         dueDate: optionalIsoDateTimeSchema,
         userId: optionalNonEmptyString,
+        environment: z.enum(["dev", "preprod", "prod"]).optional(),
+        askerEmail: optionalNonEmptyString,
       }),
     },
     async (args) => {
@@ -442,6 +454,8 @@ export function registerMcpTools(
       if (args.startDate !== undefined) body.startDate = args.startDate;
       if (args.dueDate !== undefined) body.dueDate = args.dueDate;
       if (args.userId !== undefined) body.userId = args.userId;
+      if (args.environment !== undefined) body.environment = args.environment;
+      if (args.askerEmail !== undefined) body.askerEmail = args.askerEmail;
       return run(() =>
         client.json(`/api/task/${encodeURIComponent(args.projectId)}`, {
           method: "POST",
@@ -467,6 +481,8 @@ export function registerMcpTools(
         startDate: nullableOptionalIsoDateTimeSchema,
         dueDate: nullableOptionalIsoDateTimeSchema,
         userId: nullableOptionalNonEmptyString,
+        environment: z.enum(["dev", "preprod", "prod"]).nullable().optional(),
+        askerEmail: nullableOptionalNonEmptyString,
       }),
     },
     async (args) => {
@@ -822,6 +838,47 @@ export function registerMcpTools(
   );
 
   registerTool(
+    "update_task_environment",
+    {
+      description:
+        "Set where the feature lives: dev, preprod, or prod. Pass null to clear.",
+      inputSchema: z.object({
+        taskId: nonEmptyString,
+        environment: z.enum(["dev", "preprod", "prod"]).nullable(),
+      }),
+    },
+    async (args) =>
+      run(() =>
+        client.json(
+          `/api/task/environment/${encodeURIComponent(args.taskId)}`,
+          {
+            method: "PUT",
+            body: JSON.stringify({ environment: args.environment }),
+          },
+        ),
+      ),
+  );
+
+  registerTool(
+    "update_task_asker",
+    {
+      description:
+        "Set the requester email (who asked for the task). Empty falls back to julienlelandais@me.com.",
+      inputSchema: z.object({
+        taskId: nonEmptyString,
+        askerEmail: z.string().nullable(),
+      }),
+    },
+    async (args) =>
+      run(() =>
+        client.json(`/api/task/asker/${encodeURIComponent(args.taskId)}`, {
+          method: "PUT",
+          body: JSON.stringify({ askerEmail: args.askerEmail }),
+        }),
+      ),
+  );
+
+  registerTool(
     "update_task_assignee",
     {
       description:
@@ -1039,9 +1096,7 @@ export function registerMcpTools(
             id: taskId,
             url: `${clientUrl}/dashboard/workspace/${workspaceId}/project/${projectId}/task/${taskId}`,
             identifier:
-              task.number != null && slug
-                ? `${slug}-${task.number}`
-                : taskId,
+              task.number != null && slug ? `${slug}-${task.number}` : taskId,
             title: task.title,
             status: task.status,
           });

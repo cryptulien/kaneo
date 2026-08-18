@@ -14,6 +14,7 @@ const SORT_FIELD_MAP: Record<SortField, true> = {
   title: true,
   number: true,
   tag: true,
+  environment: true,
 };
 
 const SORT_FIELDS = Object.keys(SORT_FIELD_MAP) as readonly SortField[];

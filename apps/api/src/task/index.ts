@@ -39,12 +39,15 @@ import {
   requireTaskAssigneePermission,
 } from "./controllers/require-task-permission";
 import updateTask from "./controllers/update-task";
+import updateTaskAsker from "./controllers/update-task-asker";
 import updateTaskAssignee from "./controllers/update-task-assignee";
 import updateTaskDescription from "./controllers/update-task-description";
 import updateTaskDueDate from "./controllers/update-task-due-date";
+import updateTaskEnvironment from "./controllers/update-task-environment";
 import updateTaskPriority from "./controllers/update-task-priority";
 import updateTaskStatus from "./controllers/update-task-status";
 import updateTaskTitle from "./controllers/update-task-title";
+import { VALID_ENVIRONMENTS } from "./environment";
 import { VALID_PRIORITIES } from "./validate-task-fields";
 
 const task = new Hono<{
@@ -197,6 +200,8 @@ const task = new Hono<{
         priority: v.picklist(VALID_PRIORITIES),
         status: v.string(),
         userId: v.optional(v.string()),
+        environment: v.optional(v.nullable(v.picklist(VALID_ENVIRONMENTS))),
+        askerEmail: v.optional(v.nullable(v.string())),
       }),
     ),
     workspaceAccess.fromProject("projectId"),
@@ -212,6 +217,8 @@ const task = new Hono<{
         priority,
         status,
         userId,
+        environment,
+        askerEmail,
       } = c.req.valid("json");
 
       const parsedStartDate =
@@ -235,6 +242,8 @@ const task = new Hono<{
         dueDate: parsedDueDate,
         priority,
         status,
+        environment,
+        askerEmail,
       });
 
       return c.json(task);
@@ -342,6 +351,8 @@ const task = new Hono<{
         projectId: v.string(),
         position: v.number(),
         userId: v.optional(v.string()),
+        environment: v.optional(v.nullable(v.picklist(VALID_ENVIRONMENTS))),
+        askerEmail: v.optional(v.nullable(v.string())),
       }),
     ),
     workspaceAccess.fromTask(),
@@ -360,6 +371,8 @@ const task = new Hono<{
         projectId,
         position,
         userId,
+        environment,
+        askerEmail,
       } = c.req.valid("json");
 
       const currentUserId = c.get("userId");
@@ -387,6 +400,8 @@ const task = new Hono<{
         position,
         userId,
         currentUserId,
+        environment,
+        askerEmail,
       );
 
       return c.json(task);
@@ -546,6 +561,75 @@ const task = new Hono<{
 
       const task = await updateTaskPriority({ id, priority, currentUserId });
 
+      return c.json(task);
+    },
+  )
+  .put(
+    "/environment/:id",
+    describeRoute({
+      operationId: "updateTaskEnvironment",
+      tags: ["Tasks"],
+      description: "Update only the environment tag of a task",
+      responses: {
+        200: {
+          description: "Task environment updated successfully",
+          content: {
+            "application/json": { schema: resolver(taskSchema) },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ id: v.string() })),
+    validator(
+      "json",
+      v.object({
+        environment: v.nullable(v.picklist(VALID_ENVIRONMENTS)),
+      }),
+    ),
+    workspaceAccess.fromTask(),
+    requireWorkspacePermission({ task: ["update"] }),
+    requireEntitlement,
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const { environment } = c.req.valid("json");
+      const currentUserId = c.get("userId");
+      const task = await updateTaskEnvironment({
+        id,
+        environment,
+        currentUserId,
+      });
+      return c.json(task);
+    },
+  )
+  .put(
+    "/asker/:id",
+    describeRoute({
+      operationId: "updateTaskAsker",
+      tags: ["Tasks"],
+      description: "Update only the asker email of a task",
+      responses: {
+        200: {
+          description: "Task asker updated successfully",
+          content: {
+            "application/json": { schema: resolver(taskSchema) },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ id: v.string() })),
+    validator("json", v.object({ askerEmail: v.nullable(v.string()) })),
+    workspaceAccess.fromTask(),
+    requireWorkspacePermission({ task: ["update"] }),
+    requireEntitlement,
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const { askerEmail } = c.req.valid("json");
+      const currentUserId = c.get("userId");
+      const task = await updateTaskAsker({
+        id,
+        askerEmail,
+        currentUserId,
+      });
       return c.json(task);
     },
   )

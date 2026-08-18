@@ -281,6 +281,13 @@
 			"when": 1786478671279,
 			"tag": "0039_gorgeous_jack_power",
 			"breakpoints": true
+		},
+		{
+			"idx": 40,
+			"version": "7",
+			"when": 1786824000000,
+			"tag": "0040_task_environment_asker",
+			"breakpoints": true
 		}
 	]
 }

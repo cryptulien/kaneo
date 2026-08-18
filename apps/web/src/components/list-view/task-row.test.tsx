@@ -71,6 +71,20 @@ vi.mock("../task/task-status-chip", () => ({
   ),
 }));
 
+vi.mock("../task/task-environment-chip", () => ({
+  default: ({ task }: { task: Task }) => (
+    <span data-testid="env-column">{task.environment ?? "—"}</span>
+  ),
+}));
+
+vi.mock("../task/task-asker-popover", () => ({
+  default: ({
+    children,
+  }: {
+    children: React.ReactNode;
+  }) => children,
+}));
+
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
   initReactI18next: { type: "3rdParty", init: vi.fn() },

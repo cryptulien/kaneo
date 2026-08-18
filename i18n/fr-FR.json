@@ -1783,7 +1783,8 @@
 				"dueDate": "Date d'échéance",
 				"title": "Titre",
 				"number": "Numéro de tâche",
-				"tag": "Tag"
+				"tag": "Tag",
+				"environment": "Env"
 			}
 		},
 		"boardFilters": {
@@ -1838,7 +1839,9 @@
 			"noTasks": "Aucune tâche",
 			"title": "Titre",
 			"status": "Statut",
-			"tags": "Tags"
+			"tags": "Tags",
+			"environment": "Env",
+			"asker": "Demandeur"
 		},
 		"epics": {
 			"badge": "Épopée",

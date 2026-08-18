@@ -3,6 +3,12 @@ import { HTTPException } from "hono/http-exception";
 import db from "../../database";
 import { columnTable, taskTable, userTable } from "../../database/schema";
 import { publishEvent } from "../../events";
+import {
+  DEFAULT_ASKER_EMAIL,
+  isTaskEnvironment,
+  isValidAskerEmail,
+  normalizeAskerEmail,
+} from "../environment";
 import { assertValidTaskStatus } from "../validate-task-fields";
 import { claimTaskNumber } from "./claim-task-numbers";
 
@@ -16,6 +22,8 @@ async function createTask({
   dueDate,
   description,
   priority,
+  environment,
+  askerEmail,
 }: {
   projectId: string;
   currentUserId: string;
@@ -26,9 +34,19 @@ async function createTask({
   dueDate?: Date;
   description?: string;
   priority?: string;
+  environment?: string | null;
+  askerEmail?: string | null;
 }) {
   const resolvedStatus = status || "to-do";
   const resolvedPriority = priority || "no-priority";
+  const resolvedEnvironment =
+    environment && isTaskEnvironment(environment) ? environment : "dev";
+  const resolvedAsker = normalizeAskerEmail(askerEmail);
+  if (!isValidAskerEmail(resolvedAsker)) {
+    throw new HTTPException(400, {
+      message: `Invalid asker email "${askerEmail ?? ""}"`,
+    });
+  }
 
   const normalizedUserId = userId?.trim() || undefined;
 
@@ -81,6 +99,8 @@ async function createTask({
         dueDate: dueDate || null,
         description: description || "",
         priority: resolvedPriority,
+        environment: resolvedEnvironment,
+        askerEmail: resolvedAsker || DEFAULT_ASKER_EMAIL,
         number: taskNumber,
         position: nextPosition,
       })

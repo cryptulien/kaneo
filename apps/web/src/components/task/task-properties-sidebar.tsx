@@ -34,13 +34,20 @@ import {
   getDueDateStatus,
   isTaskCompleted,
 } from "@/lib/due-date-status";
+import {
+  DEFAULT_ASKER_EMAIL,
+  ENVIRONMENT_META,
+  isTaskEnvironment,
+} from "@/lib/environment";
 import { formatDateShort } from "@/lib/format";
 import { getInitials } from "@/lib/get-initials";
 import { getPriorityLabel, getStatusDisplayLabel } from "@/lib/i18n/domain";
 import { getPriorityIcon } from "@/lib/priority";
 import { toast } from "@/lib/toast";
+import TaskAskerPopover from "./task-asker-popover";
 import TaskAssigneePopover from "./task-assignee-popover";
 import TaskDueDatePopover from "./task-due-date-popover";
+import TaskEnvironmentPopover from "./task-environment-popover";
 import TaskLabelsPopover from "./task-labels-popover";
 import TaskMovePopover from "./task-move-popover";
 import TaskPriorityPopover from "./task-priority-popover";
@@ -610,6 +617,49 @@ export default function TaskPropertiesSidebar({
                       </span>
                     </Button>
                   </TaskPriorityPopover>
+                )}
+                {task && (
+                  <TaskEnvironmentPopover task={task}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="justify-start h-7 px-1.5 gap-1.5 w-full"
+                    >
+                      {isTaskEnvironment(task.environment) ? (
+                        <>
+                          <span
+                            className="inline-block h-2 w-2 rounded-full"
+                            style={{
+                              backgroundColor:
+                                ENVIRONMENT_META[task.environment].color,
+                            }}
+                          />
+                          <span className="text-xs font-semibold">
+                            {ENVIRONMENT_META[task.environment].label}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-xs font-semibold text-muted-foreground">
+                          {t("tasks:environment.unset", {
+                            defaultValue: "Env",
+                          })}
+                        </span>
+                      )}
+                    </Button>
+                  </TaskEnvironmentPopover>
+                )}
+                {task && (
+                  <TaskAskerPopover task={task}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="justify-start h-7 px-1.5 gap-1.5 w-full"
+                    >
+                      <span className="text-xs font-semibold truncate">
+                        {task.askerEmail || DEFAULT_ASKER_EMAIL}
+                      </span>
+                    </Button>
+                  </TaskAskerPopover>
                 )}
                 {task && (
                   <TaskAssigneePopover task={task} workspaceId={workspaceId}>
