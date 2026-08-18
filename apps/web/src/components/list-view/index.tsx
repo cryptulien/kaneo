@@ -537,7 +537,6 @@ function ListView({
           </span>
           <span>{t("tasks:listView.asker", { defaultValue: "Asker" })}</span>
           <span />
-          <span />
         </div>
         <div className="divide-y divide-border/50">
           {project.columns.map((column) => (

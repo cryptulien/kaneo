@@ -1,7 +1,5 @@
 import { X } from "lucide-react";
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar } from "@/components/ui/calendar";
 import {
   ContextMenuCheckboxItem,
@@ -13,18 +11,15 @@ import {
   ContextMenuSubTrigger,
 } from "@/components/ui/context-menu";
 import { useUpdateTask } from "@/hooks/mutations/task/use-update-task";
-import { useUpdateTaskAssignee } from "@/hooks/mutations/task/use-update-task-assignee";
 import { useUpdateTaskDescription } from "@/hooks/mutations/task/use-update-task-description";
 import { useUpdateTaskDueDate } from "@/hooks/mutations/task/use-update-task-due-date";
 import { useUpdateTaskStatus } from "@/hooks/mutations/task/use-update-task-status";
 import { useUpdateTaskPriority } from "@/hooks/mutations/task/use-update-task-status-priority";
 import { useUpdateTaskTitle } from "@/hooks/mutations/task/use-update-task-title";
 import { useGetColumns } from "@/hooks/queries/column/use-get-columns";
-import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { getColumnIcon } from "@/lib/column";
 import { generateLink } from "@/lib/generate-link";
-import { getInitials } from "@/lib/get-initials";
 import { getPriorityLabel } from "@/lib/i18n/domain";
 import { getPriorityIcon } from "@/lib/priority";
 import { toast } from "@/lib/toast";
@@ -64,28 +59,14 @@ export default function TaskCardContextMenuContent({
           icon: col.icon,
           isFinal: col.isFinal,
         }));
-  const { data: workspaceUsers } = useGetActiveWorkspaceUsers(
-    taskCardContext.worskpaceId,
-  );
   const { mutateAsync: updateTask } = useUpdateTask();
   const { mutateAsync: updateTaskPriority } = useUpdateTaskPriority();
   const { mutateAsync: updateTaskStatus } = useUpdateTaskStatus();
-  const { mutateAsync: updateTaskAssignee } = useUpdateTaskAssignee();
   const { mutateAsync: updateTaskTitle } = useUpdateTaskTitle();
   const { mutateAsync: updateTaskDescription } = useUpdateTaskDescription();
   const { mutateAsync: updateTaskDueDate } = useUpdateTaskDueDate();
-  const { canManageTasks, canAssignTasks } = useWorkspacePermission();
+  const { canManageTasks } = useWorkspacePermission();
   const canEdit = canManageTasks();
-  const canAssign = canAssignTasks();
-
-  const usersOptions = useMemo(() => {
-    return workspaceUsers?.members?.map((member) => ({
-      label: member?.user?.name ?? member.userId,
-      value: member.userId,
-      image: member?.user?.image ?? "",
-      name: member?.user?.name ?? "",
-    }));
-  }, [workspaceUsers]);
 
   const handleCopyTaskLink = () => {
     const path = `/dashboard/workspace/${taskCardContext.worskpaceId}/project/${taskCardContext.projectId}/task/${task.id}`;
@@ -103,9 +84,6 @@ export default function TaskCardContextMenuContent({
           break;
         case "status":
           await updateTaskStatus({ ...task, status: value as string });
-          break;
-        case "userId":
-          await updateTaskAssignee({ ...task, userId: value as string });
           break;
         case "title":
           await updateTaskTitle({ ...task, title: value as string });
@@ -137,7 +115,7 @@ export default function TaskCardContextMenuContent({
         <span>{t("tasks:contextMenu.copyLink")}</span>
       </ContextMenuItem>
 
-      {(canEdit || canAssign) && <ContextMenuSeparator />}
+      {canEdit && <ContextMenuSeparator />}
 
       {canEdit && (
         <ContextMenuSub>
@@ -247,48 +225,6 @@ export default function TaskCardContextMenuContent({
                 </ContextMenuItem>
               </>
             )}
-          </ContextMenuSubContent>
-        </ContextMenuSub>
-      )}
-
-      {canAssign && usersOptions && (
-        <ContextMenuSub>
-          <ContextMenuSubTrigger>
-            <span>{t("tasks:assignee.label")}</span>
-          </ContextMenuSubTrigger>
-          <ContextMenuSubContent className="w-48">
-            <ContextMenuCheckboxItem
-              checked={!task.userId}
-              onCheckedChange={() => handleChange("userId", "")}
-              closeOnClick
-            >
-              <div
-                className="w-6 h-6 rounded-full bg-muted border border-border flex items-center justify-center"
-                title={t("tasks:assignee.unassigned")}
-              >
-                <span className="text-[10px] font-medium text-muted-foreground">
-                  ?
-                </span>{" "}
-              </div>
-              {t("tasks:assignee.unassigned")}
-            </ContextMenuCheckboxItem>
-            {usersOptions.map((user) => (
-              <ContextMenuCheckboxItem
-                key={user.value}
-                checked={task.userId === user.value}
-                onCheckedChange={() => handleChange("userId", user.value ?? "")}
-                closeOnClick
-              >
-                <Avatar className="h-6 w-6">
-                  <AvatarImage src={user.image ?? ""} alt={user.name || ""} />
-                  <AvatarFallback className="text-xs font-medium border border-border/30">
-                    {getInitials(user.name)}
-                  </AvatarFallback>
-                </Avatar>
-
-                {user.label}
-              </ContextMenuCheckboxItem>
-            ))}
           </ContextMenuSubContent>
         </ContextMenuSub>
       )}

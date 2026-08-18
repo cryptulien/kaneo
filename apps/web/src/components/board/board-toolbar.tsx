@@ -176,11 +176,11 @@ export default function BoardToolbar({
   const getPriorityDisplayName = (priority: string) =>
     getPriorityLabel(priority);
 
-  const getAssigneeDisplayName = (userId: string) => {
+  const _getAssigneeDisplayName = (userId: string) => {
     const member = users?.members?.find((m) => m.userId === userId);
     return member?.user?.name || t("common:people.unknown");
   };
-  const getAssigneeAvatar = (userId: string) => {
+  const _getAssigneeAvatar = (userId: string) => {
     const member = users?.members?.find((m) => m.userId === userId);
     return (
       <Avatar className="h-4 w-4">
@@ -236,7 +236,7 @@ export default function BoardToolbar({
     updateFilter("environment", next.length > 0 ? next : null);
   };
 
-  const toggleAssigneeFilter = (userId: string) => {
+  const _toggleAssigneeFilter = (userId: string) => {
     const exists = selectedAssigneeIds.includes(userId);
     const next = exists
       ? selectedAssigneeIds.filter((id) => id !== userId)
@@ -455,58 +455,6 @@ export default function BoardToolbar({
                             }}
                           />
                           {ENVIRONMENT_META[environment].label}
-                        </button>
-                      ))}
-                    </div>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger className="h-8 rounded-md text-sm">
-                    {t("tasks:boardFilters.subjects.assignee")}
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="w-64">
-                    <div className="grid grid-cols-1 gap-1 p-1">
-                      <button
-                        className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-left text-xs ${
-                          selectedAssigneeIds.length === 0
-                            ? "bg-accent text-accent-foreground"
-                            : "text-foreground/90 hover:bg-accent/60 hover:text-foreground"
-                        }`}
-                        onClick={() => updateFilter("assignee", null)}
-                        type="button"
-                      >
-                        <CheckSlot checked={selectedAssigneeIds.length === 0} />
-                        {t("tasks:boardFilters.allAssignees")}
-                      </button>
-                      {users?.members?.map((member) => (
-                        <button
-                          key={member.userId}
-                          className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-left text-xs ${
-                            selectedAssigneeIds.includes(member.userId)
-                              ? "bg-accent text-accent-foreground"
-                              : "text-foreground/90 hover:bg-accent/60 hover:text-foreground"
-                          }`}
-                          onClick={() => toggleAssigneeFilter(member.userId)}
-                          type="button"
-                        >
-                          <CheckSlot
-                            checked={selectedAssigneeIds.includes(
-                              member.userId,
-                            )}
-                          />
-                          <span className="inline-flex items-center gap-2">
-                            <Avatar className="h-5 w-5">
-                              <AvatarImage
-                                src={member.user?.image ?? ""}
-                                alt={member.user?.name || ""}
-                              />
-                              <AvatarFallback className="border border-border/30 text-[10px] font-medium">
-                                {getInitials(member.user?.name)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span>{member.user?.name}</span>
-                          </span>
                         </button>
                       ))}
                     </div>
@@ -738,31 +686,6 @@ export default function BoardToolbar({
                   </span>
                 }
                 onClear={() => updateFilter("priority", null)}
-              />
-            )}
-
-            {selectedAssigneeIds.length > 0 && (
-              <ActiveFilterChip
-                subject={t("tasks:boardFilters.subjects.assignee")}
-                operator={t("tasks:boardFilters.operators.isAnyOf")}
-                value={
-                  <span className="inline-flex items-center gap-1.5">
-                    <StackedIcons
-                      items={selectedAssigneeIds.map((userId) => ({
-                        id: userId,
-                        node: getAssigneeAvatar(userId),
-                      }))}
-                    />
-                    <span>
-                      {selectedAssigneeIds.length === 1
-                        ? getAssigneeDisplayName(selectedAssigneeIds[0])
-                        : t("tasks:boardFilters.selectedCount", {
-                            count: selectedAssigneeIds.length,
-                          })}
-                    </span>
-                  </span>
-                }
-                onClear={() => updateFilter("assignee", null)}
               />
             )}
 
