@@ -35,6 +35,7 @@ import {
   isTaskCompleted,
 } from "@/lib/due-date-status";
 import { getPriorityIcon } from "@/lib/priority";
+import { formatTaskNumber, taskNumberLabel } from "@/lib/task-number";
 import { toast } from "@/lib/toast";
 import queryClient from "@/query-client";
 import useBulkSelectionStore from "@/store/bulk-selection";
@@ -74,8 +75,7 @@ function TaskCard({
   const { data: workspace } = useActiveWorkspace();
   const { mutateAsync: deleteTask } = useDeleteTask();
   const navigate = useNavigate();
-  const { showPriority, showDueDates, showLabels, showTaskNumbers } =
-    useUserPreferencesStore();
+  const { showPriority, showDueDates, showLabels } = useUserPreferencesStore();
   const [isDeleteTaskModalOpen, setIsDeleteTaskModalOpen] = useState(false);
   const { toggleSelection, isSelected, isFocused } = useBulkSelectionStore();
   const isTaskSelected = isSelected(task.id);
@@ -196,7 +196,7 @@ function TaskCard({
               }
             }}
           >
-            {(showTaskNumbers || (task.childCount ?? 0) > 0) && (
+            {(formatTaskNumber(task.number) || (task.childCount ?? 0) > 0) && (
               <div className="mb-2 flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground/90">
                 {(task.childCount ?? 0) > 0 && (
                   <button
@@ -216,11 +216,15 @@ function TaskCard({
                     )}
                   </button>
                 )}
-                {showTaskNumbers && (
-                  <span>
-                    {project?.slug}-{task.number}
+                {formatTaskNumber(task.number) ? (
+                  <span
+                    title={
+                      taskNumberLabel(project?.slug, task.number) ?? undefined
+                    }
+                  >
+                    {formatTaskNumber(task.number)}
                   </span>
-                )}
+                ) : null}
                 {(task.childCount ?? 0) > 0 && (
                   <span className="rounded bg-muted px-1 text-[10px] font-medium">
                     {task.childCount}

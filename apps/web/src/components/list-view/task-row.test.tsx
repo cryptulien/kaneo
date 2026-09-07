@@ -55,14 +55,16 @@ vi.mock("@/store/project", () => ({
   default: () => ({ project: { id: "project-1", slug: "kan" } }),
 }));
 
+const preferences = {
+  showAssignees: true,
+  showDueDates: true,
+  showLabels: true,
+  showTaskNumbers: false,
+  showPriority: true,
+};
+
 vi.mock("@/store/user-preferences", () => ({
-  useUserPreferencesStore: () => ({
-    showAssignees: true,
-    showDueDates: true,
-    showLabels: true,
-    showTaskNumbers: true,
-    showPriority: true,
-  }),
+  useUserPreferencesStore: () => preferences,
 }));
 
 vi.mock("../task/task-status-chip", () => ({
@@ -130,6 +132,15 @@ describe("TaskRow", () => {
     expect(screen.getByTestId("tags-column")).toHaveTextContent("Bug");
     expect(useExternalLinks).not.toHaveBeenCalled();
     expect(useGetLabelsByTask).not.toHaveBeenCalled();
+  });
+
+  it("always shows the task number in the list even when the display preference is off", () => {
+    preferences.showTaskNumbers = false;
+    render(<TaskRow task={task} projectSlug="kan" />);
+
+    const number = screen.getByTestId("task-number");
+    expect(number).toHaveTextContent("#7");
+    expect(number).toHaveAttribute("title", "kan-7");
   });
 
   it("filters by a tag when the tag in the column is clicked", async () => {

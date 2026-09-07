@@ -39,6 +39,7 @@ import {
 import { DEFAULT_ASKER_EMAIL } from "@/lib/environment";
 import { isEpicTask } from "@/lib/epic-tree";
 import { getPriorityIcon } from "@/lib/priority";
+import { formatTaskNumber, taskNumberLabel } from "@/lib/task-number";
 import { toast } from "@/lib/toast";
 import queryClient from "@/query-client";
 import useBulkSelectionStore from "@/store/bulk-selection";
@@ -92,8 +93,7 @@ function TaskRow({
   const { project } = useProjectStore();
   const taskIsCompleted = isTaskCompleted(task.status, project?.columns);
   const { data: workspace } = useActiveWorkspace();
-  const { showPriority, showDueDates, showLabels, showTaskNumbers } =
-    useUserPreferencesStore();
+  const { showPriority, showDueDates, showLabels } = useUserPreferencesStore();
   const [isDeleteTaskModalOpen, setIsDeleteTaskModalOpen] = useState(false);
   const { mutateAsync: deleteTask } = useDeleteTask();
   const { toggleSelection, isSelected, isFocused } = useBulkSelectionStore();
@@ -226,6 +226,20 @@ function TaskRow({
             {...listeners}
           >
             <div
+              className="flex min-w-0 items-center"
+              data-testid="task-number"
+              title={taskNumberLabel(projectSlug, task.number) ?? undefined}
+            >
+              {formatTaskNumber(task.number) ? (
+                <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                  {formatTaskNumber(task.number)}
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground/40">—</span>
+              )}
+            </div>
+
+            <div
               className="flex min-w-0 items-center gap-2"
               style={{ paddingLeft: depth * 20 }}
             >
@@ -257,11 +271,6 @@ function TaskRow({
               {showPriority && (
                 <div className="flex-shrink-0 first:[&_svg]:h-4 first:[&_svg]:w-4">
                   {getPriorityIcon(task.priority ?? "")}
-                </div>
-              )}
-              {showTaskNumbers && (
-                <div className="text-xs font-mono text-muted-foreground flex-shrink-0">
-                  {projectSlug}-{task.number}
                 </div>
               )}
 

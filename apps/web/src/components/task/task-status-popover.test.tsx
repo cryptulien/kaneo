@@ -9,14 +9,17 @@ const useGetColumns = vi.fn();
 afterEach(() => {
   cleanup();
   document.body.innerHTML = "";
+  mutateAsync.mockClear();
 });
 
 vi.mock("@/hooks/queries/column/use-get-columns", () => ({
   useGetColumns: (projectId: string) => useGetColumns(projectId),
 }));
 
+const mutateAsync = vi.fn().mockResolvedValue({});
+
 vi.mock("@/hooks/mutations/task/use-update-task-status", () => ({
-  useUpdateTaskStatus: () => ({ mutateAsync: vi.fn() }),
+  useUpdateTaskStatus: () => ({ mutateAsync }),
 }));
 
 vi.mock("@/hooks/use-numbered-shortcuts", () => ({
@@ -122,6 +125,41 @@ describe("TaskStatusPopover", () => {
     fireEvent.click(screen.getByRole("button", { name: "Status" }));
 
     expect(await screen.findByText("common:empty.loading")).toBeVisible();
+  });
+
+  it("changes status without letting the click bubble to the row", async () => {
+    const parentClick = vi.fn();
+    useGetColumns.mockReturnValue({
+      data: [
+        {
+          id: "column-1",
+          slug: "in-progress",
+          name: "En cours",
+          icon: null,
+          isFinal: false,
+        },
+      ],
+      isLoading: false,
+      isError: false,
+    });
+
+    render(
+      // biome-ignore lint/a11y/useKeyWithClickEvents: test harness
+      // biome-ignore lint/a11y/noStaticElementInteractions: test harness
+      <div onClick={parentClick}>
+        <TaskStatusPopover task={task}>
+          <Button>Status</Button>
+        </TaskStatusPopover>
+      </div>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Status" }));
+    fireEvent.click(await screen.findByRole("button", { name: /En cours/ }));
+
+    expect(mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "task-1", status: "in-progress" }),
+    );
+    expect(parentClick).not.toHaveBeenCalled();
   });
 
   it("shows error feedback when status options fail to load", async () => {

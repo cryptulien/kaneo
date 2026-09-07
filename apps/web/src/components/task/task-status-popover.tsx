@@ -75,10 +75,26 @@ export default function TaskStatusPopover({
 
   if (!canEdit) return <>{children}</>;
 
+  const stopRowClick = (event: React.SyntheticEvent) => {
+    event.stopPropagation();
+  };
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent className="w-48 p-0" align="start">
+    <Popover open={open} onOpenChange={setOpen} modal={false}>
+      <PopoverTrigger
+        asChild
+        onClick={stopRowClick}
+        onPointerDown={stopRowClick}
+      >
+        {children}
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-48 p-0 overflow-visible"
+        align="start"
+        onClick={stopRowClick}
+        onPointerDown={stopRowClick}
+        onMouseDown={stopRowClick}
+      >
         <div>
           {isLoading ? (
             <div className="p-3 text-center text-sm text-muted-foreground">
@@ -95,7 +111,16 @@ export default function TaskStatusPopover({
                 variant="ghost"
                 size="sm"
                 className="w-full justify-start gap-2 h-8 px-2 rounded-none first:rounded-t-md last:rounded-b-md"
-                onClick={() => handleStatusChange(status.value)}
+                style={
+                  status.color
+                    ? { backgroundColor: `${status.color}22` }
+                    : undefined
+                }
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void handleStatusChange(status.value);
+                }}
+                onPointerDown={stopRowClick}
               >
                 {getColumnIcon(
                   status.value,

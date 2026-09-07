@@ -34,6 +34,7 @@ import {
   indexProjectTasks,
 } from "@/lib/epic-tree";
 import type { SortConfig } from "@/lib/sort-tasks";
+import { formatTaskNumber } from "@/lib/task-number";
 import { toast } from "@/lib/toast";
 import useBulkSelectionStore from "@/store/bulk-selection";
 import useProjectStore from "@/store/project";
@@ -503,6 +504,7 @@ function ListView({
             "sticky top-0 z-10 border-b border-border/70 bg-muted/80 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground backdrop-blur",
           )}
         >
+          <span>#</span>
           <span>{t("tasks:listView.title", { defaultValue: "Title" })}</span>
           <span>{t("tasks:listView.status", { defaultValue: "Status" })}</span>
           {onSortChange ? (
@@ -580,7 +582,8 @@ function ListView({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] font-mono text-muted-foreground">
-                    {project?.slug}-{activeTask.number}
+                    {formatTaskNumber(activeTask.number) ??
+                      `${project?.slug}-${activeTask.number}`}
                   </span>
                   <span className="text-xs text-foreground truncate">
                     {activeTask.title}

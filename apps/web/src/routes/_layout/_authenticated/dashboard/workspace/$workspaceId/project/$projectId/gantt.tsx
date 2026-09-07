@@ -24,6 +24,7 @@ import { useGetTasks } from "@/hooks/queries/task/use-get-tasks";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/cn";
 import { getStatusLabel } from "@/lib/i18n/domain";
+import { formatTaskNumber } from "@/lib/task-number";
 import { useUserPreferencesStore } from "@/store/user-preferences";
 
 type GanttSearchParams = {
@@ -114,6 +115,9 @@ function RouteComponent() {
       return (
         task.title.toLowerCase().includes(normalizedQuery) ||
         `${project?.slug ?? ""}-${task.number ?? ""}`
+          .toLowerCase()
+          .includes(normalizedQuery) ||
+        (formatTaskNumber(task.number) ?? "")
           .toLowerCase()
           .includes(normalizedQuery) ||
         task.status.toLowerCase().includes(normalizedQuery)
@@ -348,7 +352,8 @@ function RouteComponent() {
                                   {getStatusLabel(task.status)}
                                 </span>
                                 <span className="truncate text-[10px] text-muted-foreground">
-                                  {project?.slug}-{task.number}
+                                  {formatTaskNumber(task.number) ??
+                                    `${project?.slug}-${task.number}`}
                                 </span>
                               </div>
                               <p className="w-full line-clamp-1 text-xs font-medium leading-tight text-foreground">

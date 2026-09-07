@@ -24,6 +24,7 @@ import {
   isTaskCompleted,
 } from "@/lib/due-date-status";
 import { getPriorityIcon } from "@/lib/priority";
+import { formatTaskNumber, taskNumberLabel } from "@/lib/task-number";
 import { toast } from "@/lib/toast";
 import queryClient from "@/query-client";
 import useBacklogBulkSelectionStore from "@/store/backlog-bulk-selection";
@@ -53,8 +54,7 @@ export default function BacklogTaskRow({ task }: BacklogTaskRowProps) {
   const { project } = useProjectStore();
   const taskIsCompleted = isTaskCompleted(task.status, project?.columns);
   const { data: workspace } = useActiveWorkspace();
-  const { showPriority, showDueDates, showLabels, showTaskNumbers } =
-    useUserPreferencesStore();
+  const { showPriority, showDueDates, showLabels } = useUserPreferencesStore();
   const [isDeleteTaskModalOpen, setIsDeleteTaskModalOpen] = useState(false);
   const { mutateAsync: deleteTask } = useDeleteTask();
   const { toggleSelection, isSelected, isFocused } =
@@ -145,11 +145,14 @@ export default function BacklogTaskRow({ task }: BacklogTaskRowProps) {
                 {getPriorityIcon(task.priority ?? "")}
               </div>
             )}
-            {showTaskNumbers && (
-              <div className="text-xs font-mono text-muted-foreground flex-shrink-0">
-                {project?.slug}-{task.number}
+            {formatTaskNumber(task.number) ? (
+              <div
+                className="text-xs font-mono tabular-nums text-muted-foreground flex-shrink-0"
+                title={taskNumberLabel(project?.slug, task.number) ?? undefined}
+              >
+                {formatTaskNumber(task.number)}
               </div>
-            )}
+            ) : null}
 
             <div className="flex-1 min-w-0 flex items-center gap-2">
               <div className="flex items-center gap-2 justify-between w-full">
